@@ -25,7 +25,7 @@ export default function RoleSelectionScreen({ onSelectRole }: RoleSelectionScree
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Encabezado de Marca ATRIL */}
+        {/* Encabezado de Marca ATRIL (R0 Oficial) */}
         <View style={styles.brandHeader}>
           <View style={styles.logoBox}>
             <Text style={styles.logoSymbol}>🎼</Text>
@@ -42,7 +42,7 @@ export default function RoleSelectionScreen({ onSelectRole }: RoleSelectionScree
         <View style={styles.headerBlock}>
           <Text style={styles.mainTitle}>¿Cómo deseas ingresar?</Text>
           <Text style={styles.subtitle}>
-            Configura tu rol para adaptar tu experiencia operativa
+            Selecciona tu perfil para personalizar tu experiencia en la plataforma
           </Text>
         </View>
 
@@ -58,7 +58,7 @@ export default function RoleSelectionScreen({ onSelectRole }: RoleSelectionScree
 
           <Text style={styles.cardTitle}>Quiero aprender música</Text>
           <Text style={styles.cardDescription}>
-            Accede a maestros verificados de FundaOboe, abonos protegidos por Escrow y clases en vivo.
+            Agenda clases presenciales o en vivo, contrata abonos con descuento y protege tu dinero en Escrow.
           </Text>
 
           <View style={styles.cardFooterRow}>
@@ -78,7 +78,7 @@ export default function RoleSelectionScreen({ onSelectRole }: RoleSelectionScree
           </View>
         </TouchableOpacity>
 
-        {/* TARJETA 2: ROL PROFESOR / DOCENTE */}
+        {/* TARJETA 2: ROL PROFESOR / MAESTRO */}
         <TouchableOpacity
           style={[styles.roleCard, styles.teacherCardBorder]}
           activeOpacity={0.9}
@@ -90,16 +90,16 @@ export default function RoleSelectionScreen({ onSelectRole }: RoleSelectionScree
 
           <Text style={styles.cardTitle}>Soy maestro de música</Text>
           <Text style={styles.cardDescription}>
-            Imparte clases, gestiona tus horarios presenciales u online y cobra con liquidación fiduciaria segura.
+            Publica tu cátedra, gestiona tus horarios y recibe pagos garantizados tras validar asistencia.
           </Text>
 
-          <View style={styles.requirementsBox}>
-            <Text style={styles.requirementsText}>
-              Requisitos: CV, Diplomas + Entrevista FundaOboe
-            </Text>
-          </View>
+          <View style={styles.cardFooterRow}>
+            <View style={styles.requirementsBox}>
+              <Text style={styles.requirementsText}>
+                Requiere CV, Títulos + Entrevista FundaOboeHJK
+              </Text>
+            </View>
 
-          <View style={styles.teacherActionRow}>
             <TouchableOpacity
               style={styles.chooseButtonDarkBlue}
               activeOpacity={0.85}
@@ -110,14 +110,14 @@ export default function RoleSelectionScreen({ onSelectRole }: RoleSelectionScree
           </View>
         </TouchableOpacity>
 
-        {/* OPCIÓN SECUNDARIA: VISITANTE RESTRINGIDO */}
+        {/* OPCIÓN 3: MODO VISITANTE RESTRINGIDO (Borde Punteado) */}
         <View style={styles.visitorCard}>
           <Text style={styles.visitorTitle}>Explorar catálogo en modo público</Text>
           <Text style={styles.visitorDesc}>
-            Vista general de instrumentos y oferta formativa.
+            Puedes ver la oferta general de instrumentos y sedes.
           </Text>
           <Text style={styles.visitorWarning}>
-            Perfil de profesores y contratación bloqueados.
+            Sin cuenta no podrás ver perfiles de docentes ni reservar clases.
           </Text>
 
           <TouchableOpacity
@@ -131,7 +131,7 @@ export default function RoleSelectionScreen({ onSelectRole }: RoleSelectionScree
           </TouchableOpacity>
         </View>
 
-        {/* Pie Institucional + Diagnóstico de Conexión Backend en Vivo */}
+        {/* Pie Institucional + Botón de Demostración de Conexión con Base de Datos */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
             Al continuar aceptas los Términos de Servicio y Tutela
@@ -159,13 +159,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 40,
+    paddingTop: 22,
+    paddingBottom: 36,
   },
   brandHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 24,
   },
   logoBox: {
     width: 54,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   headerBlock: {
-    marginBottom: 22,
+    marginBottom: 20,
   },
   mainTitle: {
     fontSize: 22,
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   subtitle: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '500',
     color: '#64748B',
   },
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 18,
-    marginBottom: 18,
+    marginBottom: 16,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
@@ -246,10 +246,10 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 6,
     alignSelf: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   roleTagBlueText: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '800',
     color: AZUL_REY,
   },
@@ -259,25 +259,25 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 6,
     alignSelf: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   roleTagAmberText: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#D97706',
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 17.5,
     fontWeight: '800',
     color: '#0A192F',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   cardDescription: {
     fontSize: 12.5,
     fontWeight: '400',
     color: '#64748B',
     lineHeight: 18,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   cardFooterRow: {
     flexDirection: 'row',
@@ -289,35 +289,31 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F1F5F9',
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 6,
   },
   legalPillText: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '700',
     color: '#475569',
   },
   requirementsBox: {
+    flex: 1,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     borderRadius: 6,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginBottom: 12,
+    paddingVertical: 7,
   },
   requirementsText: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '700',
     color: AZUL_OSCURO,
   },
-  teacherActionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
   chooseButtonPrimary: {
     backgroundColor: AZUL_REY,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
@@ -325,7 +321,7 @@ const styles = StyleSheet.create({
   },
   chooseButtonDarkBlue: {
     backgroundColor: AZUL_OSCURO,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
@@ -333,7 +329,7 @@ const styles = StyleSheet.create({
   },
   chooseButtonText: {
     color: '#FFFFFF',
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '800',
   },
   visitorCard: {
@@ -343,8 +339,8 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     borderStyle: 'dashed',
     padding: 18,
-    marginTop: 4,
-    marginBottom: 24,
+    marginTop: 2,
+    marginBottom: 22,
   },
   visitorTitle: {
     fontSize: 15,
@@ -379,7 +375,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
   footerText: {
     fontSize: 11,

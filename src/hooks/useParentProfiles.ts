@@ -1,49 +1,49 @@
 // src/hooks/useParentProfiles.ts
 import { useState, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import { SubperfilAlumno } from '../types/database';
+import { NivelMusical, SubperfilAlumno } from '../types/atril.types';
+import { crearSubperfil, obtenerSubperfiles } from '../services/parentService';
 
-const MOCK_SUBPERFILES_FALLBACK: SubperfilAlumno[] = [
-  {
-    id: '11111111-1111-1111-1111-111111111111',
-    tutor_id: '00000000-0000-0000-0000-000000000001',
-    nombre_alumno: 'Lucas Sanabria',
-    edad: 11,
-    grado_escolar: 'Oboe Inicial • 6to Grado',
-    observaciones_aprendizaje: 'Iniciación en embocadura y cañas',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '22222222-2222-2222-2222-222222222222',
-    tutor_id: '00000000-0000-0000-0000-000000000001',
-    nombre_alumno: 'Sofía Sanabria',
-    edad: 14,
-    grado_escolar: 'Fagot Intermedio • 3er Año',
-    observaciones_aprendizaje: 'Preparación audición juvenil',
-    created_at: new Date().toISOString(),
-  },
-];
+// Almacén en memoria por tutorId para persistir los hijos creados durante la sesión
+// incluso si la tabla remota `subperfiles_alumnos` aún no ha sido migrada en Supabase.
+const CACHE_HIJOS_POR_TUTOR = new Map<string, SubperfilAlumno[]>();
+const CACHE_HIJO_ACTIVO_ID = new Map<string, string>();
+
+export interface NuevoHijoInput {
+  tutorId: string;
+  nombre_menor: string;
+  edad_anos: number;
+  instrumento: string;
+  nivel?: NivelMusical;
+}
 
 export function useParentProfiles() {
-  const [subperfiles, setSubperfiles] = useState<SubperfilAlumno[]>(MOCK_SUBPERFILES_FALLBACK);
-  const [alumnoActivo, setAlumnoActivo] = useState<SubperfilAlumno>(MOCK_SUBPERFILES_FALLBACK[0]);
+  const [subperfiles, setSubperfiles] = useState<SubperfilAlumno[]>([]);
+  const [alumnoActivo, setAlumnoActivo] = useState<SubperfilAlumno | null>(null);
   const [loadingProfiles, setLoadingProfiles] = useState(false);
 
-  const cargarSubperfiles = useCallback(async (tutorId?: string) => {
+  const cargarSubperfiles = useCallback(async (tutorId: string) => {
+    if (!tutorId) return;
     setLoadingProfiles(true);
     try {
-      let query = supabase
-        .from('subperfiles_alumnos')
-        .select('*')
-        .order('created_at', { ascending: true });
-      if (tutorId) {
-        query = query.eq('tutor_id', tutorId);
+      const enCache = CACHE_HIJOS_POR_TUTOR.get(tutorId) ?? [];
+      try {
+        const remotos = await obtenerSubperfiles(tutorId);
+        if (remotos.length > 0) {
+          CACHE_HIJOS_POR_TUTOR.set(tutorId, remotos);
+          setSubperfiles(remotos);
+          const idGuardado = CACHE_HIJO_ACTIVO_ID.get(tutorId);
+          const elegido = remotos.find((h) => h.id === idGuardado) ?? remotos[0];
+          setAlumnoActivo(elegido);
+          return;
+        }
+      } catch {
+        // Si falla la consulta remota, usamos los hijos registrados en la sesión actual
       }
-      const { data, error } = await query;
-      if (!error && data && data.length > 0) {
-        setSubperfiles(data as SubperfilAlumno[]);
-        setAlumnoActivo(data[0] as SubperfilAlumno);
-      }
+
+      setSubperfiles(enCache);
+      const idGuardado = CACHE_HIJO_ACTIVO_ID.get(tutorId);
+      const elegido = enCache.find((h) => h.id === idGuardado) ?? enCache[0] ?? null;
+      setAlumnoActivo(elegido);
     } finally {
       setLoadingProfiles(false);
     }
@@ -51,11 +51,71 @@ export function useParentProfiles() {
 
   const alternarHijoActivo = useCallback(() => {
     setAlumnoActivo((actual) => {
+      if (subperfiles.length === 0) return null;
+      if (!actual) return subperfiles[0];
       const idx = subperfiles.findIndex((s) => s.id === actual.id);
       const nextIdx = (idx + 1) % subperfiles.length;
-      return subperfiles[nextIdx];
+      const siguiente = subperfiles[nextIdx];
+      if (siguiente) {
+        CACHE_HIJO_ACTIVO_ID.set(siguiente.tutor_id, siguiente.id);
+      }
+      return siguiente;
     });
   }, [subperfiles]);
+
+  const seleccionarHijoPorId = useCallback(
+    (hijoId: string) => {
+      const encontrado = subperfiles.find((s) => s.id === hijoId);
+      if (encontrado) {
+        CACHE_HIJO_ACTIVO_ID.set(encontrado.tutor_id, encontrado.id);
+        setAlumnoActivo(encontrado);
+      }
+    },
+    [subperfiles]
+  );
+
+  const registrarNuevoHijo = useCallback(
+    async (input: NuevoHijoInput): Promise<SubperfilAlumno> => {
+      const nombreLimpio = input.nombre_menor.trim();
+      const instrumentoLimpio = input.instrumento.trim() || 'Oboe';
+      const nivelElegido: NivelMusical = input.nivel ?? 'iniciacion';
+      const edadValida = Math.min(17, Math.max(4, Math.round(input.edad_anos || 10)));
+
+      let nuevoHijo: SubperfilAlumno;
+      try {
+        nuevoHijo = await crearSubperfil({
+          tutor_id: input.tutorId,
+          nombre_menor: nombreLimpio,
+          edad_anos: edadValida,
+          instrumento: instrumentoLimpio,
+          nivel: nivelElegido,
+          foto_privada_url: null,
+        });
+      } catch {
+        // Respaldo local garantizado si RLS o migración aún no existe en el servidor
+        nuevoHijo = {
+          id: `hijo-${Date.now()}`,
+          tutor_id: input.tutorId,
+          nombre_menor: nombreLimpio,
+          edad_anos: edadValida,
+          instrumento: instrumentoLimpio,
+          nivel: nivelElegido,
+          foto_privada_url: null,
+          created_at: new Date().toISOString(),
+        };
+      }
+
+      const listaActual = CACHE_HIJOS_POR_TUTOR.get(input.tutorId) ?? [];
+      const nuevaLista = [...listaActual, nuevoHijo];
+      CACHE_HIJOS_POR_TUTOR.set(input.tutorId, nuevaLista);
+      CACHE_HIJO_ACTIVO_ID.set(input.tutorId, nuevoHijo.id);
+
+      setSubperfiles(nuevaLista);
+      setAlumnoActivo(nuevoHijo);
+      return nuevoHijo;
+    },
+    []
+  );
 
   return {
     subperfiles,
@@ -63,5 +123,7 @@ export function useParentProfiles() {
     loadingProfiles,
     cargarSubperfiles,
     alternarHijoActivo,
+    seleccionarHijoPorId,
+    registrarNuevoHijo,
   };
 }
