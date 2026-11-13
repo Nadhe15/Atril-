@@ -1,11 +1,18 @@
 // src/services/authService.ts
 import { supabase } from '../lib/supabase';
-import { RolAtril, Usuario } from '../types/atril.types';
+import { RolAtril, Usuario, NivelMusical } from '../types/atril.types';
 
 export type TipoEstudiante = 'apoderado' | 'estudiante_adulto';
 
 export interface PerfilUsuarioAtril extends Usuario {
   tipo_estudiante?: TipoEstudiante | null;
+}
+
+export interface DatosHijoRegistro {
+  nombreMenor: string;
+  edadAnos: number;
+  instrumento: string;
+  nivel: NivelMusical;
 }
 
 export interface SignUpStudentInput {
@@ -14,6 +21,10 @@ export interface SignUpStudentInput {
   nombreCompleto: string;
   tipoEstudiante: TipoEstudiante;
   cedula?: string;
+  telefono?: string;
+  parentesco?: 'Padre' | 'Madre' | 'Tutor Legal';
+  instrumentoInteres?: string;
+  hijosIniciales?: DatosHijoRegistro[];
 }
 
 export interface RegistroUsuarioInput {
@@ -28,6 +39,7 @@ export interface RegistroUsuarioInput {
 /**
  * Registra un estudiante (Apoderado o Estudiante Mayor de Edad) en Supabase Auth,
  * inyecta los metadatos para el trigger `on_auth_user_created` y asegura la fila en `public.usuarios`.
+ * Si es apoderado, registra automáticamente los representados en `public.subperfiles_alumnos`.
  */
 export async function signUpStudent(
   input: SignUpStudentInput
@@ -35,6 +47,7 @@ export async function signUpStudent(
   const emailLimpio = input.email.trim().toLowerCase();
   const nombreLimpio = input.nombreCompleto.trim();
   const cedulaLimpia = input.cedula?.trim() || null;
+  const telefonoLimpio = input.telefono?.trim() || null;
 
   const { data: authData, error: signUpError } = await supabase.auth.signUp({
     email: emailLimpio,
@@ -45,6 +58,8 @@ export async function signUpStudent(
         rol: 'representante',
         tipo_estudiante: input.tipoEstudiante,
         cedula_identidad: cedulaLimpia,
+        telefono: telefonoLimpio,
+        parentesco: input.parentesco ?? null,
       },
     },
   });
@@ -62,7 +77,7 @@ export async function signUpStudent(
     rol: 'alumno_tutor' as RolAtril,
     tipo_estudiante: input.tipoEstudiante,
     cedula_identidad: cedulaLimpia ?? '',
-    telefono: '',
+    telefono: telefonoLimpio,
   };
 
   const { data: perfilData, error: perfilError } = await supabase
@@ -75,12 +90,38 @@ export async function signUpStudent(
           nombre_completo: nombreLimpio,
           tipo_estudiante: input.tipoEstudiante,
           cedula_identidad: cedulaLimpia,
+          telefono: telefonoLimpio,
         },
       ],
       { onConflict: 'id' }
     )
     .select('*')
     .single();
+
+  // Si es representante legal y cargó representados iniciales (soporte multihijo)
+  if (
+    input.tipoEstudiante === 'apoderado' &&
+    input.hijosIniciales &&
+    input.hijosIniciales.length > 0
+  ) {
+    for (const h of input.hijosIniciales) {
+      if (h.nombreMenor.trim()) {
+        try {
+          await supabase.from('subperfiles_alumnos').insert([
+            {
+              tutor_id: authData.user.id,
+              nombre_menor: h.nombreMenor.trim(),
+              edad_anos: h.edadAnos,
+              instrumento: h.instrumento.trim(),
+              nivel: h.nivel,
+            },
+          ]);
+        } catch (e) {
+          console.warn('Advertencia registrando subperfil menor inicial:', e);
+        }
+      }
+    }
+  }
 
   if (!perfilError && perfilData) {
     return {
@@ -249,30 +290,4 @@ export async function registrarUsuarioConRol(
   }
 
   return perfilData as Usuario;
-}
-
-export async function iniciarSesionConRol(
-  email: string,
-  password: string
-): Promise<Usuario> {
-  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-    email: email.trim().toLowerCase(),
-    password,
-  });
-
-  if (signInError || !signInData.user) {
-    throw new Error(`Credenciales inválidas: ${signInError?.message ?? 'Acceso denegado'}`);
-  }
-
-  const { data: usuarioData, error: userError } = await supabase
-    .from('usuarios')
-    .select('*')
-    .eq('id', signInData.user.id)
-    .single();
-
-  if (userError || !usuarioData) {
-    throw new Error(`No se encontró el perfil del usuario: ${userError?.message ?? ''}`);
-  }
-
-  return usuarioData as Usuario;
 }
