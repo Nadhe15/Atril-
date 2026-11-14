@@ -28,7 +28,7 @@ export const DOCENTES_INICIALES_ATRIL: PerfilDocenteAtril[] = [
       'Constancia de Músico Titular — Orquesta Sinfónica Simón Bolívar',
       'Certificación Pedagógica y Aval de Acreditación Musical — Fundaoboe',
     ],
-    modalidades: ['Presencial Caracas', 'Online (Zoom)', 'Híbrido'],
+    modalidades: ['Online (En Vivo)'],
     documentos: {
       cedulaIdentidad: {
         nombreArchivo: 'cedula_elena_morales.png',
@@ -83,7 +83,7 @@ export const DOCENTES_INICIALES_ATRIL: PerfilDocenteAtril[] = [
       'Certificado de Cátedra de Cuatro Venezolano — Orquesta Típica Nacional',
       'Acreditación Oficial de Músico Verificado — Fundaoboe',
     ],
-    modalidades: ['Presencial Caracas', 'Online (Zoom)'],
+    modalidades: ['Online (En Vivo)'],
     documentos: {
       cedulaIdentidad: {
         nombreArchivo: 'cedula_carlos_briceno.jpg',
@@ -138,7 +138,7 @@ export const DOCENTES_INICIALES_ATRIL: PerfilDocenteAtril[] = [
       'Certificación de Fila de Vientos Madera — Orquesta Sinfónica Municipal',
       'Acreditación Docente Verificada — Fundaoboe',
     ],
-    modalidades: ['Presencial Caracas', 'Online (Zoom)', 'Híbrido'],
+    modalidades: ['Online (En Vivo)'],
     documentos: {
       cedulaIdentidad: {
         nombreArchivo: 'cedula_mariana_salcedo.png',
@@ -193,7 +193,7 @@ export const DOCENTES_INICIALES_ATRIL: PerfilDocenteAtril[] = [
       'Constancia de Integrante — Orquesta Sinfónica Teresa Carreño',
       'Acreditación Oficial de Músico Verificado — Fundaoboe',
     ],
-    modalidades: ['Presencial Caracas', 'Online (Zoom)'],
+    modalidades: ['Online (En Vivo)'],
     documentos: {
       cedulaIdentidad: {
         nombreArchivo: 'cedula_alejandro_iturriza.jpg',
@@ -247,7 +247,7 @@ export const DOCENTES_INICIALES_ATRIL: PerfilDocenteAtril[] = [
       'Constancia de Clarinetista Fila Principal — Orquesta Juvenil de Caracas',
       'Certificado de Estudios Superiores — Conservatorio Vicente Emilio Sojo',
     ],
-    modalidades: ['Presencial Caracas', 'Online (Zoom)'],
+    modalidades: ['Online (En Vivo)'],
     documentos: {
       cedulaIdentidad: {
         nombreArchivo: 'cedula_pedro_ramirez.png',
@@ -293,7 +293,7 @@ export const DOCENTES_INICIALES_ATRIL: PerfilDocenteAtril[] = [
     trayectoria_biografia:
       'Percusionista sinfónico con experiencia en timbales y percusión afrovenezolana.',
     certificaciones_avales: ['Certificado Orquesta Sinfónica de Aragua'],
-    modalidades: ['Online (Zoom)'],
+    modalidades: ['Online (En Vivo)'],
     observacion_revisor:
       'Cumple con el perfil musical, pero la foto de la cédula está borrosa. Queda en el Banco de Talentos hasta subsanar documento.',
     documentos: {

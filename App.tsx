@@ -63,8 +63,8 @@ export default function App() {
       nombre_solicitante: 'María Fernanda Gómez',
       beneficiario_alumno: 'Lucas Sanabria (11 años — Representado)',
       mensaje_consulta:
-        'Hola profesora Elena, deseamos coordinar clases de iniciación al Oboe para mi hijo Lucas. [Preferencia: Presencial Caracas • MIÉ 03:00 PM]',
-      fecha_solicitud: 'Reciente • Presencial Caracas (MIÉ 03:00 PM)',
+        'Hola profesora Elena, deseamos coordinar clases online de iniciación al Oboe para mi hijo Lucas. [Preferencia: Online En Vivo • MIÉ 03:00 PM]',
+      fecha_solicitud: 'Reciente • Online En Vivo (MIÉ 03:00 PM)',
       estado: 'PENDIENTE_VERIFICACION',
     },
   ]);

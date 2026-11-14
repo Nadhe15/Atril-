@@ -102,11 +102,11 @@ export default function StudentTeachersDirectoryScreen({
   const [instrumentoElegidoAlumno, setInstrumentoElegidoAlumno] =
     useState<string>('');
   const [modalidadPreferida, setModalidadPreferida] =
-    useState<ModalidadEnsenanza>('Presencial Caracas');
+    useState<ModalidadEnsenanza>('Online (En Vivo)');
   const [diaPreferido, setDiaPreferido] = useState<string>('MIÉ');
   const [horaPreferida, setHoraPreferida] = useState<string>('03:00 PM');
   const [mensajeContacto, setMensajeContacto] = useState<string>(
-    'Hola profesor(a), me gustaría coordinar clases de este instrumento con usted.'
+    'Hola profesor(a), me gustaría coordinar clases online de este instrumento con usted.'
   );
   const [confirmacionContacto, setConfirmacionContacto] = useState<
     string | null
@@ -163,17 +163,14 @@ export default function StudentTeachersDirectoryScreen({
     instrumentoFiltro
   );
 
-  const docentesFiltrados = docentesBase.filter((d) => {
-    if (modalidadFiltro === 'TODOS') return true;
-    return d.modalidades.includes(modalidadFiltro);
-  });
+  const docentesFiltrados = docentesBase;
 
   const abrirPerfilDocente = (docente: PerfilDocenteAtril) => {
     setDocenteSeleccionado(docente);
     setInstrumentoElegidoAlumno(
       docente.instrumentos_certificados[0] || docente.instrumento_principal
     );
-    setModalidadPreferida(docente.modalidades[0] || 'Presencial Caracas');
+    setModalidadPreferida('Online (En Vivo)');
     setConfirmacionContacto(null);
   };
 
@@ -571,39 +568,17 @@ export default function StudentTeachersDirectoryScreen({
           </View>
         </View>
 
-        {/* Selección de Modalidad y Horario Referencial (Interactividad tipo TeacherProfileScheduleScreen) */}
+        {/* Selección de Modalidad y Horario Referencial */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>
             2. Modalidad y Horario Referencial de Preferencia
           </Text>
           <Text style={styles.bodyParagraph}>
-            Indica tu disponibilidad preferida para que el docente la reciba junto a tu solicitud:
+            En ATRIL las clases son 100% Online En Vivo (videollamada externa Zoom / Google Meet coordinada con el docente). Indica tu disponibilidad preferida:
           </Text>
 
-          <View style={styles.modalityToggleRow}>
-            {docenteSeleccionado.modalidades.map((mod) => {
-              const activo = modalidadPreferida === mod;
-              return (
-                <TouchableOpacity
-                  key={mod}
-                  style={[
-                    styles.modalityOption,
-                    activo && styles.modalityOptionActive,
-                  ]}
-                  onPress={() => setModalidadPreferida(mod)}
-                >
-                  <Text
-                    style={[
-                      styles.modalityOptionTitle,
-                      activo && styles.modalityOptionTitleActive,
-                    ]}
-                  >
-                    {mod === 'Presencial Caracas' ? '🏛️ Presencial' : '💻 ' + mod}
-                  </Text>
-                  <Text style={styles.modalityOptionSub}>{mod}</Text>
-                </TouchableOpacity>
-              );
-            })}
+          <View style={[styles.filterChip, styles.filterChipActive, { alignSelf: 'flex-start', marginBottom: 12 }]}>
+            <Text style={styles.filterChipTextActive}>💻 Clases 100% Online En Vivo (Zoom / Meet)</Text>
           </View>
 
           <Text style={[styles.subTitle, { marginTop: 12 }]}>
@@ -874,60 +849,13 @@ export default function StudentTeachersDirectoryScreen({
         )}
       </View>
 
-      {/* Filtros de Modalidad (Estilo StudentCatalogScreen v2.0) */}
-      <View style={[styles.filterRow, { marginBottom: 10 }]}>
-        <TouchableOpacity
-          style={[
-            styles.filterChip,
-            modalidadFiltro === 'TODOS' && styles.filterChipActive,
-          ]}
-          onPress={() => setModalidadFiltro('TODOS')}
-        >
-          <Text
-            style={[
-              styles.filterChipText,
-              modalidadFiltro === 'TODOS' && styles.filterChipTextActive,
-            ]}
-          >
-            Todas las modalidades
+      {/* Formación Musical 100% Online */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+        <View style={{ backgroundColor: '#DBEAFE', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: '#93C5FD' }}>
+          <Text style={{ color: '#1D4ED8', fontSize: 11.5, fontWeight: '800' }}>
+            🌐 Formación Musical 100% Online En Vivo (Zoom / Meet)
           </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.filterChip,
-            modalidadFiltro === 'Presencial Caracas' && styles.filterChipActive,
-          ]}
-          onPress={() => setModalidadFiltro('Presencial Caracas')}
-        >
-          <Text
-            style={[
-              styles.filterChipText,
-              modalidadFiltro === 'Presencial Caracas' &&
-                styles.filterChipTextActive,
-            ]}
-          >
-            Presencial Caracas
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.filterChip,
-            modalidadFiltro === 'Online (Zoom)' && styles.filterChipActive,
-          ]}
-          onPress={() => setModalidadFiltro('Online (Zoom)')}
-        >
-          <Text
-            style={[
-              styles.filterChipText,
-              modalidadFiltro === 'Online (Zoom)' &&
-                styles.filterChipTextActive,
-            ]}
-          >
-            Online En Vivo
-          </Text>
-        </TouchableOpacity>
+        </View>
       </View>
 
       {/* Chips de Instrumentos */}
@@ -1005,7 +933,7 @@ export default function StudentTeachersDirectoryScreen({
                     🏛️ {docente.orquesta_o_conservatorio}
                   </Text>
                   <Text style={styles.teacherLocationText}>
-                    📍 {textoModalidades}
+                    💻 Clases 100% Online (En Vivo / Zoom)
                   </Text>
                   <Text style={styles.teacherBio} numberOfLines={2}>
                     {docente.trayectoria_biografia}

@@ -25,9 +25,7 @@ interface TeacherAccreditedProfileScreenProps {
 }
 
 const MODALIDADES_DISPONIBLES: ModalidadEnsenanza[] = [
-  'Presencial Caracas',
-  'Online (Zoom)',
-  'Híbrido',
+  'Online (En Vivo)',
 ];
 
 const BLOQUES_SEMANALES_INICIALES = [
@@ -89,15 +87,10 @@ export default function TeacherAccreditedProfileScreen({
     );
   };
 
-  const toggleModalidadDocente = (mod: ModalidadEnsenanza) => {
-    const existe = perfilDocente.modalidades.includes(mod);
-    let nuevas = existe
-      ? perfilDocente.modalidades.filter((m) => m !== mod)
-      : [...perfilDocente.modalidades, mod];
-    if (nuevas.length === 0) nuevas = ['Presencial Caracas'];
+  const toggleModalidadDocente = (_mod: ModalidadEnsenanza) => {
     onUpdateTeacherProfile({
       ...perfilDocente,
-      modalidades: nuevas,
+      modalidades: ['Online (En Vivo)'],
     });
   };
 
@@ -224,42 +217,19 @@ export default function TeacherAccreditedProfileScreen({
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Modalidades que impartes</Text>
+          <Text style={styles.sectionTitle}>Modalidad de Enseñanza</Text>
           <Text style={styles.bodyText}>
-            Toca para activar o desactivar tus modalidades de clase disponibles:
+            En ATRIL las clases son 100% Online En Vivo (videollamada externa Zoom / Google Meet coordinada por el maestro):
           </Text>
           <View style={styles.instrumentsGrid}>
-            {MODALIDADES_DISPONIBLES.map((mod) => {
-              const activa = perfilDocente.modalidades.includes(mod);
-              return (
-                <TouchableOpacity
-                  key={mod}
-                  style={[
-                    styles.instrumentPill,
-                    !activa && {
-                      backgroundColor: '#F8FAFC',
-                      borderColor: '#CBD5E1',
-                    },
-                  ]}
-                  onPress={() => toggleModalidadDocente(mod)}
-                >
-                  <Text style={styles.instrumentPillText}>
-                    {mod === 'Presencial Caracas' ? '🏛️ ' : '💻 '}
-                    {mod}
-                  </Text>
-                  <View
-                    style={[
-                      styles.certifiedMiniTag,
-                      !activa && { backgroundColor: '#94A3B8' },
-                    ]}
-                  >
-                    <Text style={styles.certifiedMiniTagText}>
-                      {activa ? 'Activa' : 'Inactiva'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+            <View style={styles.instrumentPill}>
+              <Text style={styles.instrumentPillText}>
+                💻 Clases 100% Online (En Vivo)
+              </Text>
+              <View style={styles.certifiedMiniTag}>
+                <Text style={styles.certifiedMiniTagText}>Activa • Oficial</Text>
+              </View>
+            </View>
           </View>
         </View>
 

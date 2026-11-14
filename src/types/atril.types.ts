@@ -8,7 +8,7 @@ export type EstadoAcreditacionDocente =
   | 'BANCO_TALENTOS'
   | 'DESCARTADO';
 
-export type ModalidadEnsenanza = 'Presencial Caracas' | 'Online (Zoom)' | 'Híbrido';
+export type ModalidadEnsenanza = 'Online (En Vivo)';
 
 export type NivelMusical = 'iniciacion' | 'intermedio' | 'avanzado' | 'audicion_sinfonica';
 

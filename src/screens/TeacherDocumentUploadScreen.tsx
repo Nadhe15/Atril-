@@ -144,7 +144,7 @@ export default function TeacherDocumentUploadScreen({
               'Certificado de Orquesta Sinfónica',
               'Credencial de Conservatorio de Música',
             ],
-      modalidades: ['Presencial Caracas', 'Online (Zoom)'],
+      modalidades: ['Online (En Vivo)'],
       documentos: {
         ...documentos,
         certificacionesMusicales: {
