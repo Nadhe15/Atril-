@@ -16,6 +16,10 @@ import TeacherDocumentUploadScreen from './src/screens/TeacherDocumentUploadScre
 import TeacherAccreditedProfileScreen from './src/screens/TeacherAccreditedProfileScreen';
 import StudentTeachersDirectoryScreen from './src/screens/StudentTeachersDirectoryScreen';
 import FundaoboeReviewScreen from './src/screens/FundaoboeReviewScreen';
+import BottomTabBar, {
+  StudentTabKey,
+  TeacherTabKey,
+} from './src/components/BottomTabBar';
 import { DOCENTES_INICIALES_ATRIL } from './src/services/teacherDirectoryService';
 import {
   EstadoAcreditacionDocente,
@@ -43,6 +47,11 @@ export default function App() {
     useState<NuevoDocenteEnRegistro | null>(null);
   const [docenteAcreditadoActivoId, setDocenteAcreditadoActivoId] =
     useState<string>('doc-elena-01');
+
+  // Pestañas inferiores nativas para Alumno y Docente Acreditado
+  const [studentTab, setStudentTab] = useState<StudentTabKey>('docentes');
+  const [teacherTab, setTeacherTab] = useState<TeacherTabKey>('perfil');
+
   const [solicitudesContacto, setSolicitudesContacto] = useState<
     SolicitudContactoDocente[]
   >([
@@ -51,11 +60,11 @@ export default function App() {
       docente_id: 'doc-elena-01',
       nombre_docente: 'Prof. Elena Morales',
       instrumento_seleccionado: 'Oboe Sinfónico',
-      nombre_solicitante: 'Samuel Sanabria',
+      nombre_solicitante: 'María Fernanda Gómez',
       beneficiario_alumno: 'Lucas Sanabria (11 años — Representado)',
       mensaje_consulta:
-        'Hola profesora Elena, deseamos coordinar clases de iniciación al Oboe para mi hijo Lucas.',
-      fecha_solicitud: 'Reciente • En espera de verificación de contacto',
+        'Hola profesora Elena, deseamos coordinar clases de iniciación al Oboe para mi hijo Lucas. [Preferencia: Presencial Caracas • MIÉ 03:00 PM]',
+      fecha_solicitud: 'Reciente • Presencial Caracas (MIÉ 03:00 PM)',
       estado: 'PENDIENTE_VERIFICACION',
     },
   ]);
@@ -70,6 +79,7 @@ export default function App() {
           docentes.find((d) => d.acreditado_fundaoboe)?.id ||
           'doc-elena-01';
         setDocenteAcreditadoActivoId(idDoc);
+        setTeacherTab('perfil');
         setPantallaActiva('PERFIL_DOCENTE_ACREDITADO');
       } else {
         setDocenteEnRegistroPaso2({
@@ -90,6 +100,7 @@ export default function App() {
     }
 
     if (usuario.rol === 'ALUMNO') {
+      setStudentTab('docentes');
       setPantallaActiva('DIRECTORIO_DOCENTES_ALUMNO');
       return;
     }
@@ -170,6 +181,7 @@ export default function App() {
           docentesPublicos={docentes}
           onLoginSuccess={handleLoginSuccess}
           onStartTeacherDocumentStep={handleStartTeacherDocumentStep}
+          onBackToSplash={() => setPantallaActiva('SPLASH')}
         />
       </>
     );
@@ -180,37 +192,98 @@ export default function App() {
     docentes.find((d) => d.acreditado_fundaoboe) ||
     docentes[0];
 
+  const consultasDelDocenteActivo = solicitudesContacto.filter(
+    (s) => s.docente_id === perfilDocenteActivo.id
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
 
-      {/* Barra Superior Institucional de Navegación Rápida */}
+      {/* Barra Superior Compacta estilo App v2.0 */}
       <View style={styles.topNavigationBar}>
         <View style={styles.rolePill}>
           <Text style={styles.rolePillText}>
             {pantallaActiva === 'PERFIL_DOCENTE_ACREDITADO'
-              ? '🎻 PERFIL DEL PROFESOR ACREDITADO'
+              ? '🎻 DOCENTE ACREDITADO'
               : pantallaActiva === 'REGISTRO_DOCENTE_DOCUMENTOS'
-              ? '📄 REGISTRO DOCENTE · RECOLECCIÓN DE DOCUMENTOS'
+              ? '📄 REGISTRO DOCENTE · PASO 2'
               : pantallaActiva === 'DIRECTORIO_DOCENTES_ALUMNO'
-              ? '🎓 ALUMNO · SECCIÓN DE DOCENTES'
-              : '🛡️ REVISIÓN DE DOCUMENTOS · FUNDAOBOE'}
+              ? '🎼 ATRIL · DOCENTES'
+              : '🛡️ REVISIÓN FUNDAOBOE'}
           </Text>
         </View>
 
         <TouchableOpacity style={styles.switchSessionBtn} onPress={handleLogout}>
-          <Text style={styles.switchSessionBtnText}>⇄ Inicio de Sesión</Text>
+          <Text style={styles.switchSessionBtnText}>⇄ Cambiar Sesión</Text>
         </TouchableOpacity>
       </View>
 
-      {/* PANTALLA 2 DEL REGISTRO DOCENTE NO ACREDITADO: RECOLECCIÓN DE DOCUMENTOS */}
-      {pantallaActiva === 'REGISTRO_DOCENTE_DOCUMENTOS' &&
-        docenteEnRegistroPaso2 && (
-          <TeacherDocumentUploadScreen
-            datosDocente={docenteEnRegistroPaso2}
-            onSubmitApplication={handleSubmitTeacherApplication}
-            onGoToReviewerConsole={() => {
-              setUsuarioActivo({
+      <View style={{ flex: 1 }}>
+        {/* PANTALLA 2 DEL REGISTRO DOCENTE NO ACREDITADO: RECOLECCIÓN DE DOCUMENTOS */}
+        {pantallaActiva === 'REGISTRO_DOCENTE_DOCUMENTOS' &&
+          docenteEnRegistroPaso2 && (
+            <TeacherDocumentUploadScreen
+              datosDocente={docenteEnRegistroPaso2}
+              onSubmitApplication={handleSubmitTeacherApplication}
+              onGoToReviewerConsole={() => {
+                setUsuarioActivo({
+                  id: 'usr-rev-fundaoboe',
+                  email: 'virginia.moreno@fundaoboe.org.ve',
+                  rol: 'REVISION_FUNDAOBOE',
+                  cedula_identidad: 'V-10.482.119',
+                  nombre_completo: 'Coord. Virginia Moreno (Fundaoboe)',
+                  telefono: '+58 212-5550100',
+                  cargo_fundaoboe:
+                    'Comité de Revisión y Acreditación Musical — Fundaoboe',
+                });
+                setPantallaActiva('REVISION_FUNDAOBOE');
+              }}
+              onBackToLogin={handleLogout}
+            />
+          )}
+
+        {/* PANTALLA DEL DOCENTE ACREDITADO: PASA DIRECTO A SU PERFIL */}
+        {pantallaActiva === 'PERFIL_DOCENTE_ACREDITADO' && (
+          <TeacherAccreditedProfileScreen
+            perfilDocente={perfilDocenteActivo}
+            solicitudesContacto={solicitudesContacto}
+            activeTab={teacherTab}
+            onSelectTab={setTeacherTab}
+            onUpdateTeacherProfile={handleUpdateTeacherProfile}
+            onLogout={handleLogout}
+          />
+        )}
+
+        {/* PANTALLA DEL ALUMNO: SECCIÓN "DOCENTES", "MIS CONSULTAS" Y "MI PERFIL" */}
+        {pantallaActiva === 'DIRECTORIO_DOCENTES_ALUMNO' && (
+          <StudentTeachersDirectoryScreen
+            usuarioActual={
+              usuarioActivo || {
+                id: 'usr-alumno-demo',
+                email: 'samuel.sanabria@estudiante.ve',
+                rol: 'ALUMNO',
+                cedula_identidad: 'V-20.105.918',
+                nombre_completo: 'Samuel Sanabria',
+                telefono: '+58 414-2201928',
+                es_mayor_edad: true,
+              }
+            }
+            docentes={docentes}
+            solicitudesEnviadas={solicitudesContacto}
+            activeTab={studentTab}
+            onSelectTab={setStudentTab}
+            onSendContactRequest={handleSendContactRequest}
+            onUpdateUsuario={setUsuarioActivo}
+            onLogout={handleLogout}
+          />
+        )}
+
+        {/* PANTALLA DEL ENCARGADO DE FUNDAOBOE: REVISIÓN DE DOCUMENTOS Y ACREDITACIÓN */}
+        {pantallaActiva === 'REVISION_FUNDAOBOE' && (
+          <FundaoboeReviewScreen
+            usuarioRevisor={
+              usuarioActivo || {
                 id: 'usr-rev-fundaoboe',
                 email: 'virginia.moreno@fundaoboe.org.ve',
                 rol: 'REVISION_FUNDAOBOE',
@@ -219,77 +292,48 @@ export default function App() {
                 telefono: '+58 212-5550100',
                 cargo_fundaoboe:
                   'Comité de Revisión y Acreditación Musical — Fundaoboe',
-              });
-              setPantallaActiva('REVISION_FUNDAOBOE');
+              }
+            }
+            docentes={docentes}
+            onDecideTeacherStatus={handleDecideTeacherStatus}
+            onOpenAccreditedTeacherPreview={(docente) => {
+              setDocenteAcreditadoActivoId(docente.id);
+              setTeacherTab('perfil');
+              setPantallaActiva('PERFIL_DOCENTE_ACREDITADO');
             }}
-            onBackToLogin={handleLogout}
+            onLogout={handleLogout}
           />
         )}
+      </View>
 
-      {/* PANTALLA DEL DOCENTE ACREDITADO: PASA DIRECTO A SU PERFIL */}
-      {pantallaActiva === 'PERFIL_DOCENTE_ACREDITADO' && (
-        <TeacherAccreditedProfileScreen
-          perfilDocente={perfilDocenteActivo}
-          solicitudesContacto={solicitudesContacto}
-          onUpdateTeacherProfile={handleUpdateTeacherProfile}
-          onLogout={handleLogout}
-        />
-      )}
-
-      {/* PANTALLA DEL ALUMNO: SECCIÓN "DOCENTES" Y PERFIL DEL DOCENTE */}
+      {/* Barra de Navegación Inferior Nativa (BottomTabBar) */}
       {pantallaActiva === 'DIRECTORIO_DOCENTES_ALUMNO' && (
-        <StudentTeachersDirectoryScreen
-          usuarioActual={
-            usuarioActivo || {
-              id: 'usr-alumno-demo',
-              email: 'samuel.sanabria@estudiante.ve',
-              rol: 'ALUMNO',
-              cedula_identidad: 'V-20.105.918',
-              nombre_completo: 'Samuel Sanabria',
-              telefono: '+58 414-2201928',
-              es_mayor_edad: true,
-            }
-          }
-          docentes={docentes}
-          onSendContactRequest={handleSendContactRequest}
-          onLogout={handleLogout}
+        <BottomTabBar
+          variant="student"
+          activeTab={studentTab}
+          onSelectTab={setStudentTab}
+          consultasCount={solicitudesContacto.length}
         />
       )}
 
-      {/* PANTALLA DEL ENCARGADO DE FUNDAOBOE: REVISIÓN DE DOCUMENTOS Y ACREDITACIÓN */}
-      {pantallaActiva === 'REVISION_FUNDAOBOE' && (
-        <FundaoboeReviewScreen
-          usuarioRevisor={
-            usuarioActivo || {
-              id: 'usr-rev-fundaoboe',
-              email: 'virginia.moreno@fundaoboe.org.ve',
-              rol: 'REVISION_FUNDAOBOE',
-              cedula_identidad: 'V-10.482.119',
-              nombre_completo: 'Coord. Virginia Moreno (Fundaoboe)',
-              telefono: '+58 212-5550100',
-              cargo_fundaoboe:
-                'Comité de Revisión y Acreditación Musical — Fundaoboe',
-            }
-          }
-          docentes={docentes}
-          onDecideTeacherStatus={handleDecideTeacherStatus}
-          onOpenAccreditedTeacherPreview={(docente) => {
-            setDocenteAcreditadoActivoId(docente.id);
-            setPantallaActiva('PERFIL_DOCENTE_ACREDITADO');
-          }}
-          onLogout={handleLogout}
+      {pantallaActiva === 'PERFIL_DOCENTE_ACREDITADO' && (
+        <BottomTabBar
+          variant="teacher"
+          activeTab={teacherTab}
+          onSelectTab={setTeacherTab}
+          consultasCount={consultasDelDocenteActivo.length}
         />
       )}
     </SafeAreaView>
   );
 }
 
-const AZUL_REY = '#0047AB';
+const AZUL_REY = '#1D4ED8';
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F4F7FC',
+    backgroundColor: '#F8FAFC',
     paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
   },
   topNavigationBar: {
@@ -299,33 +343,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 10,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 2,
-    borderBottomColor: '#475569',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
     flexWrap: 'wrap',
     gap: 8,
   },
   rolePill: {
     backgroundColor: '#DBEAFE',
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: AZUL_REY,
   },
   rolePillText: {
     color: AZUL_REY,
-    fontSize: 11.5,
-    fontWeight: '900',
+    fontSize: 11,
+    fontWeight: '800',
   },
   switchSessionBtn: {
-    backgroundColor: AZUL_REY,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: AZUL_REY,
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderRadius: 8,
   },
   switchSessionBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12.5,
-    fontWeight: '900',
+    color: AZUL_REY,
+    fontSize: 12,
+    fontWeight: '800',
   },
 });

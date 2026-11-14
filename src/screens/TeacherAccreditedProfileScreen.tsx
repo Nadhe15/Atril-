@@ -9,16 +9,32 @@ import {
   ScrollView,
 } from 'react-native';
 import {
+  ModalidadEnsenanza,
   PerfilDocenteAtril,
   SolicitudContactoDocente,
 } from '../types/atril.types';
+import { TeacherTabKey } from '../components/BottomTabBar';
 
 interface TeacherAccreditedProfileScreenProps {
   perfilDocente: PerfilDocenteAtril;
   solicitudesContacto: SolicitudContactoDocente[];
+  activeTab?: TeacherTabKey;
+  onSelectTab?: (tab: TeacherTabKey) => void;
   onUpdateTeacherProfile: (actualizado: PerfilDocenteAtril) => void;
   onLogout: () => void;
 }
+
+const MODALIDADES_DISPONIBLES: ModalidadEnsenanza[] = [
+  'Presencial Caracas',
+  'Online (Zoom)',
+  'Híbrido',
+];
+
+const BLOQUES_SEMANALES_INICIALES = [
+  'Lunes y Miércoles • 03:00 PM a 06:00 PM',
+  'Martes y Jueves • 09:00 AM a 12:00 PM',
+  'Sábados • 10:00 AM a 01:00 PM',
+];
 
 const obtenerIniciales = (nombre: string): string => {
   const limpio = nombre.replace(/^(Prof\.?|Mtro\.?)\s*/i, '').trim();
@@ -30,6 +46,8 @@ const obtenerIniciales = (nombre: string): string => {
 export default function TeacherAccreditedProfileScreen({
   perfilDocente,
   solicitudesContacto,
+  activeTab = 'perfil',
+  onSelectTab,
   onUpdateTeacherProfile,
   onLogout,
 }: TeacherAccreditedProfileScreenProps) {
@@ -37,6 +55,13 @@ export default function TeacherAccreditedProfileScreen({
   const [mensajeConfirmacion, setMensajeConfirmacion] = useState<string | null>(
     null
   );
+  const [bloquesHorarios, setBloquesHorarios] = useState<string[]>(
+    BLOQUES_SEMANALES_INICIALES
+  );
+  const [nuevoBloqueTexto, setNuevoBloqueTexto] = useState<string>('');
+  const [solicitudesConfirmadasIds, setSolicitudesConfirmadasIds] = useState<
+    string[]
+  >([]);
 
   const handleAgregarInstrumentoCertificado = () => {
     const inst = nuevoInstrumento.trim();
@@ -64,10 +89,217 @@ export default function TeacherAccreditedProfileScreen({
     );
   };
 
+  const toggleModalidadDocente = (mod: ModalidadEnsenanza) => {
+    const existe = perfilDocente.modalidades.includes(mod);
+    let nuevas = existe
+      ? perfilDocente.modalidades.filter((m) => m !== mod)
+      : [...perfilDocente.modalidades, mod];
+    if (nuevas.length === 0) nuevas = ['Presencial Caracas'];
+    onUpdateTeacherProfile({
+      ...perfilDocente,
+      modalidades: nuevas,
+    });
+  };
+
+  const handleAgregarBloqueHorario = () => {
+    if (!nuevoBloqueTexto.trim()) return;
+    setBloquesHorarios((prev) => [...prev, nuevoBloqueTexto.trim()]);
+    setNuevoBloqueTexto('');
+  };
+
   const misSolicitudes = solicitudesContacto.filter(
     (s) => s.docente_id === perfilDocente.id
   );
 
+  // =========================================================================
+  // PESTAÑA 2 DEL DOCENTE: CONSULTAS DE ALUMNOS
+  // =========================================================================
+  if (activeTab === 'consultas') {
+    return (
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.tabHeaderBlock}>
+          <Text style={styles.sectionKicker}>BANDEJA DEL PROFESOR ACREDITADO</Text>
+          <Text style={styles.tabMainTitle}>
+            Consultas de Alumnos ({misSolicitudes.length})
+          </Text>
+          <Text style={styles.bodyText}>
+            Solicitudes enviadas por estudiantes y representantes interesados en tus cátedras certificadas:
+          </Text>
+        </View>
+
+        {misSolicitudes.length === 0 ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Sin solicitudes pendientes</Text>
+            <Text style={styles.bodyText}>
+              Cuando un alumno busque tu instrumento en la sección de Docentes y solicite contactarte, aparecerá aquí inmediatamente.
+            </Text>
+          </View>
+        ) : (
+          misSolicitudes.map((sol) => {
+            const confirmada = solicitudesConfirmadasIds.includes(sol.id);
+            return (
+              <View key={sol.id} style={styles.card}>
+                <View style={styles.requestTopRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.contactRequestTitle}>
+                      🎓 {sol.nombre_solicitante}
+                    </Text>
+                    <Text style={styles.contactRequestSub}>
+                      Alumno beneficiario: {sol.beneficiario_alumno}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      confirmada && styles.statusBadgeConfirmed,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusBadgeText,
+                        confirmada && styles.statusBadgeTextConfirmed,
+                      ]}
+                    >
+                      {confirmada ? '✓ RECIBIDA' : 'PENDIENTE'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.instrumentRequestBanner}>
+                  <Text style={styles.instrumentRequestText}>
+                    🎼 Instrumento solicitado: {sol.instrumento_seleccionado}
+                  </Text>
+                  <Text style={styles.instrumentRequestDate}>
+                    📅 {sol.fecha_solicitud}
+                  </Text>
+                </View>
+
+                <Text style={styles.contactRequestMsg}>
+                  &quot;{sol.mensaje_consulta}&quot;
+                </Text>
+
+                <TouchableOpacity
+                  style={[
+                    styles.confirmContactBtn,
+                    confirmada && styles.confirmContactBtnDone,
+                  ]}
+                  onPress={() => {
+                    if (!confirmada) {
+                      setSolicitudesConfirmadasIds((prev) => [...prev, sol.id]);
+                    }
+                  }}
+                >
+                  <Text style={styles.confirmContactBtnText}>
+                    {confirmada
+                      ? '✓ Solicitud marcada como atendida'
+                      : '✓ Confirmar Disponibilidad para este Alumno'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })
+        )}
+      </ScrollView>
+    );
+  }
+
+  // =========================================================================
+  // PESTAÑA 3 DEL DOCENTE: HORARIOS Y MODALIDADES DE ENSEÑANZA
+  // =========================================================================
+  if (activeTab === 'horarios') {
+    return (
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.tabHeaderBlock}>
+          <Text style={styles.sectionKicker}>CONFIGURACIÓN ACADÉMICA</Text>
+          <Text style={styles.tabMainTitle}>Modalidades y Horarios</Text>
+          <Text style={styles.bodyText}>
+            Configura las modalidades y bloques horarios que verán los estudiantes al consultar tu perfil de docente:
+          </Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Modalidades que impartes</Text>
+          <Text style={styles.bodyText}>
+            Toca para activar o desactivar tus modalidades de clase disponibles:
+          </Text>
+          <View style={styles.instrumentsGrid}>
+            {MODALIDADES_DISPONIBLES.map((mod) => {
+              const activa = perfilDocente.modalidades.includes(mod);
+              return (
+                <TouchableOpacity
+                  key={mod}
+                  style={[
+                    styles.instrumentPill,
+                    !activa && {
+                      backgroundColor: '#F8FAFC',
+                      borderColor: '#CBD5E1',
+                    },
+                  ]}
+                  onPress={() => toggleModalidadDocente(mod)}
+                >
+                  <Text style={styles.instrumentPillText}>
+                    {mod === 'Presencial Caracas' ? '🏛️ ' : '💻 '}
+                    {mod}
+                  </Text>
+                  <View
+                    style={[
+                      styles.certifiedMiniTag,
+                      !activa && { backgroundColor: '#94A3B8' },
+                    ]}
+                  >
+                    <Text style={styles.certifiedMiniTagText}>
+                      {activa ? 'Activa' : 'Inactiva'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>
+            Bloques Horarios Referenciales
+          </Text>
+          {bloquesHorarios.map((b, idx) => (
+            <View key={idx} style={styles.certRow}>
+              <Text style={styles.certCheck}>🕒</Text>
+              <Text style={styles.certText}>{b}</Text>
+            </View>
+          ))}
+
+          <View style={[styles.addInstrumentBox, { marginTop: 10 }]}>
+            <Text style={styles.fieldLabel}>Agregar nuevo bloque horario:</Text>
+            <View style={styles.addInstrumentRow}>
+              <TextInput
+                style={[styles.textInput, { flex: 1 }]}
+                value={nuevoBloqueTexto}
+                onChangeText={setNuevoBloqueTexto}
+                placeholder="Ej. Viernes • 02:00 PM a 05:00 PM"
+                placeholderTextColor="#64748B"
+              />
+              <TouchableOpacity
+                style={styles.addBtn}
+                onPress={handleAgregarBloqueHorario}
+              >
+                <Text style={styles.addBtnText}>＋ Añadir</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // =========================================================================
+  // PESTAÑA 1 (POR DEFECTO AL INICIAR SESIÓN): MI PERFIL DE PROFESOR ACREDITADO
+  // =========================================================================
   return (
     <ScrollView
       contentContainerStyle={styles.container}
@@ -87,7 +319,9 @@ export default function TeacherAccreditedProfileScreen({
                 ✓ MÚSICO VERIFICADO Y ACREDITADO POR FUNDAOBOE
               </Text>
             </View>
-            <Text style={styles.teacherName}>{perfilDocente.nombre_completo}</Text>
+            <Text style={styles.teacherName}>
+              {perfilDocente.nombre_completo}
+            </Text>
             <Text style={styles.teacherDocMeta}>
               C.I. {perfilDocente.cedula_identidad} • {perfilDocente.anos_experiencia} años de trayectoria
             </Text>
@@ -118,7 +352,7 @@ export default function TeacherAccreditedProfileScreen({
             🏅 Docente Acreditado por el Comité de Revisión de Fundaoboe
           </Text>
           <Text style={styles.accreditationStatusDesc}>
-            Tu identidad, Currículum Vitae y certificaciones sinfónicas/académicas han sido auditadas y aprobadas. Tu perfil es visible en el directorio de Docentes para todos los alumnos registrados.
+            Tu identidad, Currículum Vitae y certificaciones sinfónicas/académicas han sido auditadas y aprobadas. Tu perfil es visible en la sección de Docentes para los alumnos.
           </Text>
         </View>
 
@@ -146,7 +380,7 @@ export default function TeacherAccreditedProfileScreen({
           Instrumentos en los que estás Certificado
         </Text>
         <Text style={styles.bodyText}>
-          Estos son los instrumentos y cátedras musicales en los que cuentas con certificación verificada ante Fundaoboe:
+          Instrumentos y cátedras musicales en los que cuentas con certificación verificada ante Fundaoboe:
         </Text>
 
         <View style={styles.instrumentsGrid}>
@@ -232,38 +466,24 @@ export default function TeacherAccreditedProfileScreen({
         </View>
       </View>
 
-      {/* BLOQUE 4: SOLICITUDES DE CONTACTO DE ALUMNOS */}
+      {/* Acceso rápido a Consultas de Alumnos */}
       <View style={styles.card}>
-        <Text style={styles.sectionKicker}>
-          4. CONEXIÓN OFERTA - DEMANDA
-        </Text>
+        <Text style={styles.sectionKicker}>4. SOLICITUDES DE ESTUDIANTES</Text>
         <Text style={styles.sectionTitle}>
-          Consultas de Contacto de Alumnos ({misSolicitudes.length})
+          Consultas Recibidas ({misSolicitudes.length})
         </Text>
         <Text style={styles.bodyText}>
-          Cuando un alumno selecciona uno de los instrumentos que enseñas y solicita contactarte desde tu perfil, se registra aquí la solicitud (el mecanismo de contacto directo se encuentra en fase de definición con Fundaoboe):
+          Tienes {misSolicitudes.length} consulta(s) de alumnos interesados en tus instrumentos certificados.
         </Text>
-
-        {misSolicitudes.length === 0 ? (
-          <View style={styles.emptyContactBox}>
-            <Text style={styles.emptyContactText}>
-              Aún no tienes nuevas solicitudes de contacto en esta sesión.
+        {onSelectTab && (
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => onSelectTab('consultas')}
+          >
+            <Text style={[styles.addBtnText, { textAlign: 'center' }]}>
+              📩 Abrir Bandeja de Consultas de Alumnos →
             </Text>
-          </View>
-        ) : (
-          misSolicitudes.map((sol) => (
-            <View key={sol.id} style={styles.contactRequestCard}>
-              <Text style={styles.contactRequestTitle}>
-                🎓 {sol.nombre_solicitante} (Alumno: {sol.beneficiario_alumno})
-              </Text>
-              <Text style={styles.contactRequestSub}>
-                Instrumento de interés: {sol.instrumento_seleccionado} • {sol.fecha_solicitud}
-              </Text>
-              <Text style={styles.contactRequestMsg}>
-                &quot;{sol.mensaje_consulta}&quot;
-              </Text>
-            </View>
-          ))
+          </TouchableOpacity>
         )}
       </View>
 
@@ -276,14 +496,23 @@ export default function TeacherAccreditedProfileScreen({
   );
 }
 
-const AZUL_REY = '#0047AB';
+const AZUL_REY = '#1D4ED8';
 const AZUL_NOCHE = '#0A192F';
-const BORDE_ALTO_CONTRASTE = '#475569';
 
 const styles = StyleSheet.create({
   container: {
     padding: 18,
-    paddingBottom: 40,
+    paddingBottom: 32,
+    backgroundColor: '#F8FAFC',
+  },
+  tabHeaderBlock: {
+    marginBottom: 14,
+  },
+  tabMainTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: AZUL_NOCHE,
+    marginBottom: 4,
   },
   profileBanner: {
     backgroundColor: AZUL_NOCHE,
@@ -300,22 +529,22 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   avatarCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#FFBF00',
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: '#FBBF24',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
   avatarInitials: {
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: '900',
     color: AZUL_NOCHE,
   },
   verifiedBadgeGold: {
-    backgroundColor: '#FFBF00',
+    backgroundColor: '#FBBF24',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
@@ -324,19 +553,19 @@ const styles = StyleSheet.create({
   },
   verifiedBadgeGoldText: {
     color: AZUL_NOCHE,
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '900',
     letterSpacing: 0.3,
   },
   teacherName: {
     color: '#FFFFFF',
-    fontSize: 21,
+    fontSize: 20,
     fontWeight: '900',
     marginBottom: 2,
   },
   teacherDocMeta: {
-    color: '#B3D1FF',
-    fontSize: 13,
+    color: '#93C5FD',
+    fontSize: 12.5,
     fontWeight: '600',
   },
   mainInstrumentBox: {
@@ -344,71 +573,70 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#FFBF00',
+    borderLeftColor: '#FBBF24',
   },
   mainInstrumentLabel: {
-    color: '#B3D1FF',
-    fontSize: 11,
+    color: '#93C5FD',
+    fontSize: 10.5,
     fontWeight: '800',
     marginBottom: 2,
   },
   mainInstrumentValue: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '900',
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 18,
-    borderWidth: 2,
-    borderColor: BORDE_ALTO_CONTRASTE,
-    marginBottom: 16,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 14,
   },
   sectionKicker: {
-    fontSize: 11.5,
-    fontWeight: '900',
+    fontSize: 10.5,
+    fontWeight: '800',
     color: AZUL_REY,
     letterSpacing: 0.4,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '900',
+    fontSize: 16.5,
+    fontWeight: '800',
     color: AZUL_NOCHE,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   accreditationStatusBox: {
-    backgroundColor: '#D1FAE5',
-    borderWidth: 2,
-    borderColor: '#047857',
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1.5,
+    borderColor: '#059669',
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
   },
   accreditationStatusTitle: {
     color: '#065F46',
-    fontSize: 14.5,
-    fontWeight: '900',
+    fontSize: 13.5,
+    fontWeight: '800',
     marginBottom: 4,
   },
   accreditationStatusDesc: {
     color: '#065F46',
-    fontSize: 13.5,
-    lineHeight: 19,
+    fontSize: 12.5,
+    lineHeight: 18,
     fontWeight: '600',
   },
   subHeading: {
-    fontSize: 14,
-    fontWeight: '900',
+    fontSize: 13.5,
+    fontWeight: '800',
     color: AZUL_NOCHE,
     marginBottom: 4,
   },
   bodyText: {
-    fontSize: 14,
-    color: '#1E293B',
-    lineHeight: 20,
-    fontWeight: '500',
+    fontSize: 13,
+    color: '#334155',
+    lineHeight: 19,
     marginBottom: 8,
   },
   instrumentsGrid: {
@@ -421,37 +649,37 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#EFF6FF',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: AZUL_REY,
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 14,
   },
   instrumentPillText: {
-    fontSize: 15,
-    fontWeight: '900',
+    fontSize: 14,
+    fontWeight: '800',
     color: AZUL_NOCHE,
   },
   certifiedMiniTag: {
-    backgroundColor: '#047857',
+    backgroundColor: '#059669',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
   certifiedMiniTagText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '800',
   },
   addInstrumentBox: {
     backgroundColor: '#F8FAFC',
     borderRadius: 12,
     padding: 12,
-    borderWidth: 1.5,
-    borderColor: '#64748B',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
   },
   fieldLabel: {
-    fontSize: 13.5,
+    fontSize: 12.5,
     fontWeight: '800',
     color: AZUL_NOCHE,
     marginBottom: 6,
@@ -463,30 +691,29 @@ const styles = StyleSheet.create({
   },
   textInput: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: BORDE_ALTO_CONTRASTE,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
+    fontSize: 13.5,
     color: AZUL_NOCHE,
-    fontWeight: '600',
   },
   addBtn: {
     backgroundColor: AZUL_REY,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 11,
     borderRadius: 10,
   },
   addBtnText: {
     color: '#FFFFFF',
-    fontSize: 13.5,
-    fontWeight: '900',
-  },
-  confirmText: {
-    color: '#047857',
     fontSize: 13,
     fontWeight: '800',
+  },
+  confirmText: {
+    color: '#059669',
+    fontSize: 12.5,
+    fontWeight: '700',
     marginTop: 6,
   },
   certRow: {
@@ -498,19 +725,19 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
   },
   certCheck: {
-    color: '#047857',
-    fontSize: 15,
+    color: '#059669',
+    fontSize: 14,
     fontWeight: '900',
   },
   certText: {
     flex: 1,
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '700',
     color: AZUL_NOCHE,
-    lineHeight: 19,
+    lineHeight: 18,
   },
   docsSummaryGrid: {
     gap: 8,
@@ -521,67 +748,102 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#93C5FD',
+    borderColor: '#BFDBFE',
   },
   docSummaryLabel: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '800',
     color: AZUL_REY,
   },
   docSummaryValue: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '800',
     color: AZUL_NOCHE,
     marginTop: 2,
   },
-  emptyContactBox: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-  },
-  emptyContactText: {
-    fontSize: 13.5,
-    color: '#475569',
-    fontWeight: '600',
-  },
-  contactRequestCard: {
-    backgroundColor: '#EFF6FF',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1.5,
-    borderColor: AZUL_REY,
-    marginTop: 8,
+  requestTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 8,
   },
   contactRequestTitle: {
-    fontSize: 14.5,
-    fontWeight: '900',
+    fontSize: 15,
+    fontWeight: '800',
     color: AZUL_NOCHE,
   },
   contactRequestSub: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+    marginTop: 2,
+  },
+  statusBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusBadgeConfirmed: {
+    backgroundColor: '#ECFDF5',
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#B45309',
+  },
+  statusBadgeTextConfirmed: {
+    color: '#059669',
+  },
+  instrumentRequestBanner: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 8,
+  },
+  instrumentRequestText: {
     fontSize: 12.5,
-    fontWeight: '700',
+    fontWeight: '800',
     color: AZUL_REY,
-    marginVertical: 3,
+  },
+  instrumentRequestDate: {
+    fontSize: 11.5,
+    color: '#475569',
+    marginTop: 2,
   },
   contactRequestMsg: {
-    fontSize: 13.5,
+    fontSize: 13,
     color: '#1E293B',
     fontStyle: 'italic',
+    marginBottom: 10,
+  },
+  confirmContactBtn: {
+    backgroundColor: AZUL_REY,
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  confirmContactBtnDone: {
+    backgroundColor: '#059669',
+  },
+  confirmContactBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '800',
   },
   logoutButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FEF2F2',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: AZUL_REY,
+    borderWidth: 1.5,
+    borderColor: '#DC2626',
   },
   logoutButtonText: {
-    color: AZUL_REY,
-    fontSize: 14.5,
-    fontWeight: '900',
+    color: '#DC2626',
+    fontSize: 13.5,
+    fontWeight: '800',
   },
 });

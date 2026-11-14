@@ -35,6 +35,7 @@ interface LoginScreenProps {
   docentesPublicos: PerfilDocenteAtril[];
   onLoginSuccess: (usuario: Usuario) => void;
   onStartTeacherDocumentStep: (datosIniciales: NuevoDocenteEnRegistro) => void;
+  onBackToSplash?: () => void;
 }
 
 type ModoAcceso = 'INICIAR_SESION' | 'REGISTRARSE';
@@ -44,6 +45,7 @@ export default function LoginScreen({
   docentesPublicos,
   onLoginSuccess,
   onStartTeacherDocumentStep,
+  onBackToSplash,
 }: LoginScreenProps) {
   const [seccionSuperior, setSeccionSuperior] = useState<SeccionSuperior>('ACCESO');
   const [modoAcceso, setModoAcceso] = useState<ModoAcceso>('INICIAR_SESION');
@@ -53,7 +55,11 @@ export default function LoginScreen({
   const [loginEmail, setLoginEmail] = useState<string>('elena.morales@fundaoboe.org.ve');
   const [loginPassword, setLoginPassword] = useState<string>('••••••••');
   const [loginRolDemo, setLoginRolDemo] = useState<
-    'DOCENTE_ACREDITADO' | 'DOCENTE_SIN_ACREDITAR' | 'ALUMNO' | 'REVISION_FUNDAOBOE'
+    | 'DOCENTE_ACREDITADO'
+    | 'DOCENTE_SIN_ACREDITAR'
+    | 'ALUMNO'
+    | 'REPRESENTANTE'
+    | 'REVISION_FUNDAOBOE'
   >('DOCENTE_ACREDITADO');
   const [mensajeError, setMensajeError] = useState<string | null>(null);
 
@@ -102,6 +108,7 @@ export default function LoginScreen({
       | 'DOCENTE_ACREDITADO'
       | 'DOCENTE_SIN_ACREDITAR'
       | 'ALUMNO'
+      | 'REPRESENTANTE'
       | 'REVISION_FUNDAOBOE'
   ) => {
     setLoginRolDemo(tipo);
@@ -112,6 +119,8 @@ export default function LoginScreen({
       setLoginEmail('pedro.ramirez@musica.ve');
     } else if (tipo === 'ALUMNO') {
       setLoginEmail('samuel.sanabria@estudiante.ve');
+    } else if (tipo === 'REPRESENTANTE') {
+      setLoginEmail('maria.gomez@representante.ve');
     } else {
       setLoginEmail('virginia.moreno@fundaoboe.org.ve');
     }
@@ -195,7 +204,41 @@ export default function LoginScreen({
       return;
     }
 
-    // Por defecto o si selecciona ALUMNO
+    if (
+      loginRolDemo === 'REPRESENTANTE' ||
+      correo.includes('representante') ||
+      correo.includes('maria')
+    ) {
+      onLoginSuccess({
+        id: '00000000-0000-0000-0000-000000000001',
+        email: correo,
+        rol: 'ALUMNO',
+        cedula_identidad: 'V-15.420.118',
+        nombre_completo: 'María Fernanda Gómez',
+        telefono: '+58 414-3091122',
+        es_mayor_edad: false,
+        instrumento_interes: 'Oboe Sinfónico',
+        representados: [
+          {
+            id: 'rep-1',
+            nombre_completo: 'Lucas Sanabria',
+            edad: 11,
+            filiacion: 'Padre / Madre',
+            instrumento_interes: 'Oboe Sinfónico',
+          },
+          {
+            id: 'rep-2',
+            nombre_completo: 'Sofía Sanabria',
+            edad: 14,
+            filiacion: 'Padre / Madre',
+            instrumento_interes: 'Fagot',
+          },
+        ],
+      });
+      return;
+    }
+
+    // Por defecto o si selecciona ALUMNO ADULTO (+18)
     onLoginSuccess({
       id: 'usr-alumno-samuel',
       email: correo,
@@ -205,15 +248,7 @@ export default function LoginScreen({
       telefono: '+58 414-2201928',
       es_mayor_edad: true,
       instrumento_interes: 'Oboe Sinfónico',
-      representados: [
-        {
-          id: 'rep-1',
-          nombre_completo: 'Lucas Sanabria',
-          edad: 11,
-          filiacion: 'Padre / Madre',
-          instrumento_interes: 'Oboe Sinfónico',
-        },
-      ],
+      representados: [],
     });
   };
 
@@ -354,9 +389,13 @@ export default function LoginScreen({
         {/* Cabecera Institucional Fundaoboe & ATRIL */}
         <View style={styles.brandBanner}>
           <View style={styles.brandTopRow}>
-            <View style={styles.logoCircle}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={onBackToSplash}
+              style={styles.logoCircle}
+            >
               <Text style={styles.logoEmoji}>🎼</Text>
-            </View>
+            </TouchableOpacity>
             <View style={{ flex: 1 }}>
               <Text style={styles.brandName}>ATRIL · FUNDAOBOE</Text>
               <Text style={styles.brandTagline}>
@@ -420,45 +459,17 @@ export default function LoginScreen({
           </View>
         </View>
 
-        {/* SECCIÓN INSTITUCIONAL: QUIÉNES SOMOS */}
+        {/* SECCIÓN INSTITUCIONAL: QUIÉNES SOMOS (Sin el recuadro de los 3 roles) */}
         {seccionSuperior === 'QUIENES_SOMOS' && (
           <View style={styles.card}>
             <Text style={styles.cardKicker}>FUNDACIÓN VENEZOLANA DEL OBOE (FUNDAOBOE)</Text>
             <Text style={styles.cardTitle}>¿Qué es ATRIL y Quiénes Somos?</Text>
             <Text style={styles.cardParagraph}>
-              ATRIL es la plataforma oficial tutelada por Fundaoboe diseñada para conectar la oferta de músicos venezolanos debidamente certificados con estudiantes y familias que buscan formación musical formal.
+              La Fundación Venezolana del Oboe (Fundaoboe) impulsa el desarrollo académico y artístico de músicos y docentes en Venezuela.
             </Text>
-
-            {/* Breve y limitada presentación de cómo funciona la app una vez te registras */}
-            <View style={styles.howItWorksBox}>
-              <Text style={styles.howItWorksTitle}>
-                ℹ️ ¿Cómo funciona la aplicación una vez te registras?
-              </Text>
-              <Text style={styles.howItWorksParagraph}>
-                El acceso y las pantallas del sistema se adaptan de forma estricta según el rol con el que te diste de alta:
-              </Text>
-
-              <View style={styles.howItWorksItem}>
-                <Text style={styles.howItWorksRoleTitle}>🎻 Si te registras como Docente:</Text>
-                <Text style={styles.howItWorksDesc}>
-                  Completas tus datos y pasas a la recolección de documentos (Cédula, Foto, CV y Certificados Musicales o Sinfónicos). Una vez que Fundaoboe valida y aprueba tus recaudos, pasas directo a tu Perfil de Profesor Acreditado, donde se muestran tus instrumentos certificados y las solicitudes de contacto de los alumnos.
-                </Text>
-              </View>
-
-              <View style={styles.howItWorksItem}>
-                <Text style={styles.howItWorksRoleTitle}>🎓 Si te registras como Alumno / Representante:</Text>
-                <Text style={styles.howItWorksDesc}>
-                  Accedes a la sección de Docentes. Desde allí puedes buscar por el instrumento que quieres aprender a tocar, consultar el perfil público de los maestros avalados por Fundaoboe y enviar solicitudes para coordinar tus clases directamente con el docente seleccionado.
-                </Text>
-              </View>
-
-              <View style={styles.howItWorksItem}>
-                <Text style={styles.howItWorksRoleTitle}>🛡️ Si ingresas como Encargado de Fundaoboe:</Text>
-                <Text style={styles.howItWorksDesc}>
-                  Abres el panel de revisión de expedientes para cotejar los recaudos de los docentes y emitir su acreditación oficial, pasarlos al Banco de Talentos o descartarlos.
-                </Text>
-              </View>
-            </View>
+            <Text style={styles.cardParagraph}>
+              ATRIL es la plataforma oficial tutelada por Fundaoboe diseñada para conectar la oferta de maestros venezolanos debidamente verificados y acreditados con estudiantes y familias que buscan formación musical en su instrumento de interés.
+            </Text>
 
             <TouchableOpacity
               style={styles.primaryButton}
@@ -603,10 +614,25 @@ export default function LoginScreen({
                     onPress={() => seleccionarPerfilDemoLogin('ALUMNO')}
                   >
                     <Text style={styles.demoRoleTitle}>
-                      🎓 Alumno / Estudiante
+                      🎓 Alumno / Estudiante (+18)
                     </Text>
                     <Text style={styles.demoRoleSub}>
-                      Pasa al Directorio de Docentes por instrumento
+                      Pasa a la sección de Docentes por instrumento
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.demoRoleCard,
+                      loginRolDemo === 'REPRESENTANTE' && styles.demoRoleCardActive,
+                    ]}
+                    onPress={() => seleccionarPerfilDemoLogin('REPRESENTANTE')}
+                  >
+                    <Text style={styles.demoRoleTitle}>
+                      👨‍👧 Padre / Representante (Menores)
+                    </Text>
+                    <Text style={styles.demoRoleSub}>
+                      Pasa a Docentes con gestión de hijos representados
                     </Text>
                   </TouchableOpacity>
 
