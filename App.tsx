@@ -6,416 +6,326 @@ import {
   Text,
   TouchableOpacity,
   SafeAreaView,
-  ScrollView,
-  Alert,
   Platform,
+  StatusBar as RNStatusBar,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import RoleSelectionScreen, { SelectedAppRole } from './src/screens/RoleSelectionScreen';
+import SplashScreen from './src/screens/SplashScreen';
+import LoginScreen, { NuevoDocenteEnRegistro } from './src/screens/LoginScreen';
+import TeacherDocumentUploadScreen from './src/screens/TeacherDocumentUploadScreen';
+import TeacherAccreditedProfileScreen from './src/screens/TeacherAccreditedProfileScreen';
+import StudentTeachersDirectoryScreen from './src/screens/StudentTeachersDirectoryScreen';
+import FundaoboeReviewScreen from './src/screens/FundaoboeReviewScreen';
+import { DOCENTES_INICIALES_ATRIL } from './src/services/teacherDirectoryService';
 import {
-  calcularAbono,
-  calcularHonorarioClase,
-} from './src/utils/escrowCalculator';
-import { bloquearFondosEscrow } from './src/services/escrowService';
-import {
-  declararClaseImpartida,
-  responderEncuestaYConfirmar,
-} from './src/services/attendanceService';
+  EstadoAcreditacionDocente,
+  PerfilDocenteAtril,
+  SolicitudContactoDocente,
+  Usuario,
+} from './src/types/atril.types';
 
-const DEMO_TUTOR_ID = '00000000-0000-0000-0000-000000000001';
-const DEMO_ALUMNO_ID = '11111111-1111-1111-1111-111111111111';
-const DEMO_PROFESOR_ID = '99999999-9999-9999-9999-999999999999';
-
-const ETIQUETA_ESTADO_SESION: Record<string, string> = {
-  programada: 'Programada',
-  declarada_docente: 'Impartida (Pendiente de confirmar)',
-  asistencia_validada: 'Asistencia Confirmada',
-  incumplimiento_reportado: 'Incidencia Reportada',
-  cancelada: 'Cancelada',
-};
-
-const ETIQUETA_ESTADO_ESCROW: Record<string, string> = {
-  bloqueado: 'Protegido en Custodia Escrow',
-  liberado: 'Honorario Liquidado al Docente',
-  reembolsado: 'Reembolsado al Representante',
-  en_disputa: 'En Revisión Fiduciaria',
-};
+type PantallaActiva =
+  | 'SPLASH'
+  | 'LOGIN_Y_REGISTRO'
+  | 'REGISTRO_DOCENTE_DOCUMENTOS'
+  | 'PERFIL_DOCENTE_ACREDITADO'
+  | 'DIRECTORIO_DOCENTES_ALUMNO'
+  | 'REVISION_FUNDAOBOE';
 
 export default function App() {
-  const [selectedRole, setSelectedRole] = useState<SelectedAppRole | null>(null);
-  const [tarifaBase] = useState<number>(25.0);
-  const [sesionActivaId, setSesionActivaId] = useState<string | null>(null);
-  const [estadoSesion, setEstadoSesion] = useState<string>('Sin reservas activas');
-  const [estadoEscrow, setEstadoEscrow] = useState<string>('Sin fondos en custodia');
-  const [comprobanteReciente, setComprobanteReciente] = useState<string | null>(null);
+  const [pantallaActiva, setPantallaActiva] =
+    useState<PantallaActiva>('SPLASH');
+  const [usuarioActivo, setUsuarioActivo] = useState<Usuario | null>(null);
+  const [docentes, setDocentes] = useState<PerfilDocenteAtril[]>(
+    DOCENTES_INICIALES_ATRIL
+  );
+  const [docenteEnRegistroPaso2, setDocenteEnRegistroPaso2] =
+    useState<NuevoDocenteEnRegistro | null>(null);
+  const [docenteAcreditadoActivoId, setDocenteAcreditadoActivoId] =
+    useState<string>('doc-elena-01');
+  const [solicitudesContacto, setSolicitudesContacto] = useState<
+    SolicitudContactoDocente[]
+  >([
+    {
+      id: 'sol-inicial-1',
+      docente_id: 'doc-elena-01',
+      nombre_docente: 'Prof. Elena Morales',
+      instrumento_seleccionado: 'Oboe Sinfónico',
+      nombre_solicitante: 'Samuel Sanabria',
+      beneficiario_alumno: 'Lucas Sanabria (11 años — Representado)',
+      mensaje_consulta:
+        'Hola profesora Elena, deseamos coordinar clases de iniciación al Oboe para mi hijo Lucas.',
+      fecha_solicitud: 'Reciente • En espera de verificación de contacto',
+      estado: 'PENDIENTE_VERIFICACION',
+    },
+  ]);
 
-  const desgloseUnitario = calcularHonorarioClase(tarifaBase);
-  const abono6 = calcularAbono(6, tarifaBase);
-  const abono8 = calcularAbono(8, tarifaBase);
+  const handleLoginSuccess = (usuario: Usuario) => {
+    setUsuarioActivo(usuario);
 
-  const notificar = (titulo: string, msg: string) => {
-    if (Platform.OS === 'web') {
-      window.alert(`${titulo}\n\n${msg}`);
-    } else {
-      Alert.alert(titulo, msg);
-    }
-  };
-
-  // Reserva y retención en custodia fiduciaria (Alumno / Representante)
-  const handleReservarConEscrow = async (monto: number, etiqueta: string) => {
-    try {
-      const { sesion } = await bloquearFondosEscrow({
-        tutorId: DEMO_TUTOR_ID,
-        alumnoId: DEMO_ALUMNO_ID,
-        profesorId: DEMO_PROFESOR_ID,
-        fechaHora: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
-        modalidad: 'online',
-        montoBruto: monto,
-      });
-
-      setSesionActivaId(sesion.id);
-      setEstadoSesion(ETIQUETA_ESTADO_SESION[sesion.estado_sesion] ?? sesion.estado_sesion);
-      setEstadoEscrow(ETIQUETA_ESTADO_ESCROW[sesion.estado_escrow] ?? sesion.estado_escrow);
-
-      const folioCorto = sesion.id.slice(0, 8).toUpperCase();
-      setComprobanteReciente(
-        `Reserva #${folioCorto} • ${etiqueta} • $${sesion.monto_bruto.toFixed(2)} USD en custodia`
-      );
-
-      notificar(
-        'Reserva Protegida con Escrow',
-        `Tu pago por ${etiqueta} ($${sesion.monto_bruto.toFixed(2)} USD) quedó resguardado bajo custodia fiduciaria de FundaOboeHJK.\n\nFolio de operación: #${folioCorto}`
-      );
-    } catch (err: any) {
-      notificar(
-        'No se pudo procesar la reserva',
-        err?.message || 'Verifica tu conexión e intenta nuevamente.'
-      );
-    }
-  };
-
-  // Declaración de clase impartida por el Maestro
-  const handleDeclararClaseDocente = async () => {
-    if (!sesionActivaId) {
-      notificar(
-        'Sin clases pendientes',
-        'Actualmente no tienes sesiones programadas pendientes por declarar.'
-      );
+    if (usuario.rol === 'DOCENTE') {
+      if (usuario.estado_acreditacion === 'ACREDITADO') {
+        const idDoc =
+          usuario.perfil_docente_id ||
+          docentes.find((d) => d.acreditado_fundaoboe)?.id ||
+          'doc-elena-01';
+        setDocenteAcreditadoActivoId(idDoc);
+        setPantallaActiva('PERFIL_DOCENTE_ACREDITADO');
+      } else {
+        setDocenteEnRegistroPaso2({
+          nombre_completo: usuario.nombre_completo,
+          cedula_identidad: usuario.cedula_identidad,
+          email: usuario.email,
+          telefono: usuario.telefono,
+          instrumento_principal: 'Clarinete Sinfónico',
+          instrumentos_certificados: ['Clarinete', 'Flauta Transversa'],
+          orquesta_o_conservatorio: 'Conservatorio de Música Simón Bolívar',
+          anos_experiencia: 6,
+          trayectoria_biografia:
+            'Músico ejecutante en proceso de acreditación ante Fundaoboe.',
+        });
+        setPantallaActiva('REGISTRO_DOCENTE_DOCUMENTOS');
+      }
       return;
     }
 
-    try {
-      const data = await declararClaseImpartida(sesionActivaId, DEMO_PROFESOR_ID);
-
-      setEstadoSesion(ETIQUETA_ESTADO_SESION[data.estado_sesion] ?? data.estado_sesion);
-      const folioCorto = data.id.slice(0, 8).toUpperCase();
-      setComprobanteReciente(
-        `Asistencia registrada #${folioCorto} • En espera de confirmación del representante`
-      );
-
-      notificar(
-        'Asistencia Registrada',
-        `Has registrado la sesión #${folioCorto} como impartida. El representante recibirá la solicitud de confirmación para liberar tus honorarios.`
-      );
-    } catch (err: any) {
-      notificar('No se pudo registrar la asistencia', err?.message || 'Intenta nuevamente.');
-    }
-  };
-
-  // Confirmación de asistencia y calificación por el Tutor/Alumno
-  const handleConfirmarYLiberarEscrow = async () => {
-    if (!sesionActivaId) {
-      notificar('Sin sesiones por confirmar', 'No tienes clases pendientes de confirmación.');
+    if (usuario.rol === 'ALUMNO') {
+      setPantallaActiva('DIRECTORIO_DOCENTES_ALUMNO');
       return;
     }
 
-    try {
-      const resultado = await responderEncuestaYConfirmar(sesionActivaId, DEMO_TUTOR_ID, 5);
-      setEstadoSesion(
-        ETIQUETA_ESTADO_SESION[resultado.sesion.estado_sesion] ?? resultado.sesion.estado_sesion
-      );
-      setEstadoEscrow(
-        ETIQUETA_ESTADO_ESCROW[resultado.sesion.estado_escrow] ?? resultado.sesion.estado_escrow
-      );
-
-      const folioCorto = resultado.sesion.id.slice(0, 8).toUpperCase();
-      setComprobanteReciente(
-        `Liquidación #${folioCorto} completada • Honorario liberado: $${resultado.movimientoLiberacion.monto_usd.toFixed(2)} USD`
-      );
-
-      notificar(
-        'Asistencia Confirmada',
-        `Gracias por evaluar tu clase (★★★★★).\n\nSe ha liberado el pago al docente ($${resultado.movimientoLiberacion.monto_usd.toFixed(2)} USD netos) y el aporte institucional FundaOboeHJK ($${resultado.movimientoComision.monto_usd.toFixed(2)} USD).`
-      );
-    } catch (err: any) {
-      notificar('Atención', err?.message || 'No se pudo confirmar la asistencia.');
+    if (usuario.rol === 'REVISION_FUNDAOBOE') {
+      setPantallaActiva('REVISION_FUNDAOBOE');
     }
   };
 
-  if (!selectedRole) {
+  const handleStartTeacherDocumentStep = (
+    datosIniciales: NuevoDocenteEnRegistro
+  ) => {
+    setDocenteEnRegistroPaso2(datosIniciales);
+    setPantallaActiva('REGISTRO_DOCENTE_DOCUMENTOS');
+  };
+
+  const handleSubmitTeacherApplication = (
+    nuevoExpediente: PerfilDocenteAtril
+  ) => {
+    setDocentes((prev) => {
+      const sinDuplicado = prev.filter(
+        (d) =>
+          d.cedula_identidad.toLowerCase() !==
+          nuevoExpediente.cedula_identidad.toLowerCase()
+      );
+      return [nuevoExpediente, ...sinDuplicado];
+    });
+  };
+
+  const handleDecideTeacherStatus = (
+    docenteId: string,
+    nuevoEstado: EstadoAcreditacionDocente,
+    observacion?: string
+  ) => {
+    setDocentes((prev) =>
+      prev.map((d) => {
+        if (d.id !== docenteId) return d;
+        return {
+          ...d,
+          acreditado_fundaoboe: nuevoEstado === 'ACREDITADO',
+          estado_acreditacion: nuevoEstado,
+          observacion_revisor: observacion,
+        };
+      })
+    );
+  };
+
+  const handleUpdateTeacherProfile = (actualizado: PerfilDocenteAtril) => {
+    setDocentes((prev) =>
+      prev.map((d) => (d.id === actualizado.id ? actualizado : d))
+    );
+  };
+
+  const handleSendContactRequest = (solicitud: SolicitudContactoDocente) => {
+    setSolicitudesContacto((prev) => [solicitud, ...prev]);
+  };
+
+  const handleLogout = () => {
+    setUsuarioActivo(null);
+    setDocenteEnRegistroPaso2(null);
+    setPantallaActiva('LOGIN_Y_REGISTRO');
+  };
+
+  if (pantallaActiva === 'SPLASH') {
     return (
       <>
-        <StatusBar style="dark" />
-        <RoleSelectionScreen onSelectRole={(role) => setSelectedRole(role)} />
+        <StatusBar style="light" />
+        <SplashScreen onEnter={() => setPantallaActiva('LOGIN_Y_REGISTRO')} />
       </>
     );
   }
 
+  if (pantallaActiva === 'LOGIN_Y_REGISTRO') {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <LoginScreen
+          docentesPublicos={docentes}
+          onLoginSuccess={handleLoginSuccess}
+          onStartTeacherDocumentStep={handleStartTeacherDocumentStep}
+        />
+      </>
+    );
+  }
+
+  const perfilDocenteActivo =
+    docentes.find((d) => d.id === docenteAcreditadoActivoId) ||
+    docentes.find((d) => d.acreditado_fundaoboe) ||
+    docentes[0];
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Barra Superior Institucional */}
-        <View style={styles.topRow}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {selectedRole === 'ALUMNO'
-                ? 'ESTUDIANTE / REPRESENTANTE'
-                : selectedRole === 'DOCENTE'
-                ? 'PORTAL DEL MAESTRO'
-                : 'VITRINA PÚBLICA'}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={() => setSelectedRole(null)} style={styles.switchBtn}>
-            <Text style={styles.switchBtnText}>⇄ Cambiar perfil</Text>
-          </TouchableOpacity>
+
+      {/* Barra Superior Institucional de Navegación Rápida */}
+      <View style={styles.topNavigationBar}>
+        <View style={styles.rolePill}>
+          <Text style={styles.rolePillText}>
+            {pantallaActiva === 'PERFIL_DOCENTE_ACREDITADO'
+              ? '🎻 PERFIL DEL PROFESOR ACREDITADO'
+              : pantallaActiva === 'REGISTRO_DOCENTE_DOCUMENTOS'
+              ? '📄 REGISTRO DOCENTE · RECOLECCIÓN DE DOCUMENTOS'
+              : pantallaActiva === 'DIRECTORIO_DOCENTES_ALUMNO'
+              ? '🎓 ALUMNO · SECCIÓN DE DOCENTES'
+              : '🛡️ REVISIÓN DE DOCUMENTOS · FUNDAOBOE'}
+          </Text>
         </View>
 
-        {/* Resumen de Billetera y Custodia Fiduciaria */}
-        <View style={styles.statusBanner}>
-          <Text style={styles.statusBannerTitle}>CUSTODIA FIDUCIARIA ATRIL</Text>
-          <Text style={styles.statusLine}>
-            • Reserva activa:{' '}
-            <Text style={styles.boldWhite}>
-              {sesionActivaId ? `#${sesionActivaId.slice(0, 8).toUpperCase()}` : 'Ninguna'}
-            </Text>
-          </Text>
-          <Text style={styles.statusLine}>
-            • Estado académico: <Text style={styles.boldGold}>{estadoSesion}</Text>
-          </Text>
-          <Text style={styles.statusLine}>
-            • Garantía Escrow: <Text style={styles.boldGreen}>{estadoEscrow}</Text>
-          </Text>
-          {comprobanteReciente && (
-            <View style={styles.receiptPill}>
-              <Text style={styles.receiptPillText}>✓ {comprobanteReciente}</Text>
-            </View>
-          )}
-        </View>
+        <TouchableOpacity style={styles.switchSessionBtn} onPress={handleLogout}>
+          <Text style={styles.switchSessionBtnText}>⇄ Inicio de Sesión</Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* VISTA ALUMNO / APODERADO */}
-        {selectedRole === 'ALUMNO' && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Planes y Abonos Formativos</Text>
-            <View style={styles.calcBox}>
-              <Text style={styles.calcLine}>
-                • Sesión Individual (60 min): ${desgloseUnitario.bruto.toFixed(2)} USD
-              </Text>
-              <Text style={styles.calcLine}>
-                • Abono Formativo 6 Clases (-{abono6.porcentajeAhorro}%): $
-                {abono6.totalAPagarContado.toFixed(2)} USD (Ahorras ${abono6.ahorroUsd.toFixed(2)})
-              </Text>
-              <Text style={styles.calcLine}>
-                • Abono Intensivo 8 Clases (-{abono8.porcentajeAhorro}%): $
-                {abono8.totalAPagarContado.toFixed(2)} USD (Ahorras ${abono8.ahorroUsd.toFixed(2)})
-              </Text>
-            </View>
-
-            <Text style={styles.sectionTitle}>Contratación y Confirmación de Clases</Text>
-
-            <TouchableOpacity
-              style={styles.primaryBtn}
-              onPress={() => handleReservarConEscrow(25.0, 'Sesión Individual')}
-            >
-              <Text style={styles.primaryBtnText}>
-                🔒 Reservar Sesión Individual ($25.00 USD)
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.primaryBtn, { backgroundColor: '#1E40AF' }]}
-              onPress={() =>
-                handleReservarConEscrow(abono6.totalAPagarContado, 'Abono Formativo 6 Clases')
-              }
-            >
-              <Text style={styles.primaryBtnText}>
-                ★ Contratar Abono 6 Clases ($135.00 USD • -10%)
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.primaryBtn, { backgroundColor: '#059669' }]}
-              onPress={handleConfirmarYLiberarEscrow}
-            >
-              <Text style={styles.primaryBtnText}>
-                ✓ Confirmar Clase Recibida y Evaluar Docente
-              </Text>
-            </TouchableOpacity>
-          </View>
+      {/* PANTALLA 2 DEL REGISTRO DOCENTE NO ACREDITADO: RECOLECCIÓN DE DOCUMENTOS */}
+      {pantallaActiva === 'REGISTRO_DOCENTE_DOCUMENTOS' &&
+        docenteEnRegistroPaso2 && (
+          <TeacherDocumentUploadScreen
+            datosDocente={docenteEnRegistroPaso2}
+            onSubmitApplication={handleSubmitTeacherApplication}
+            onGoToReviewerConsole={() => {
+              setUsuarioActivo({
+                id: 'usr-rev-fundaoboe',
+                email: 'virginia.moreno@fundaoboe.org.ve',
+                rol: 'REVISION_FUNDAOBOE',
+                cedula_identidad: 'V-10.482.119',
+                nombre_completo: 'Coord. Virginia Moreno (Fundaoboe)',
+                telefono: '+58 212-5550100',
+                cargo_fundaoboe:
+                  'Comité de Revisión y Acreditación Musical — Fundaoboe',
+              });
+              setPantallaActiva('REVISION_FUNDAOBOE');
+            }}
+            onBackToLogin={handleLogout}
+          />
         )}
 
-        {/* VISTA DOCENTE / PROFESOR */}
-        {selectedRole === 'DOCENTE' && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Control de Clases y Honorarios</Text>
-            <Text style={styles.helperText}>
-              Al finalizar tu sesión en vivo o presencial, registra la clase impartida para notificar al representante y liberar tus honorarios en billetera.
-            </Text>
+      {/* PANTALLA DEL DOCENTE ACREDITADO: PASA DIRECTO A SU PERFIL */}
+      {pantallaActiva === 'PERFIL_DOCENTE_ACREDITADO' && (
+        <TeacherAccreditedProfileScreen
+          perfilDocente={perfilDocenteActivo}
+          solicitudesContacto={solicitudesContacto}
+          onUpdateTeacherProfile={handleUpdateTeacherProfile}
+          onLogout={handleLogout}
+        />
+      )}
 
-            <TouchableOpacity
-              style={[styles.primaryBtn, { backgroundColor: '#059669' }]}
-              onPress={handleDeclararClaseDocente}
-            >
-              <Text style={styles.primaryBtnText}>
-                🎻 Registrar Clase Impartida
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+      {/* PANTALLA DEL ALUMNO: SECCIÓN "DOCENTES" Y PERFIL DEL DOCENTE */}
+      {pantallaActiva === 'DIRECTORIO_DOCENTES_ALUMNO' && (
+        <StudentTeachersDirectoryScreen
+          usuarioActual={
+            usuarioActivo || {
+              id: 'usr-alumno-demo',
+              email: 'samuel.sanabria@estudiante.ve',
+              rol: 'ALUMNO',
+              cedula_identidad: 'V-20.105.918',
+              nombre_completo: 'Samuel Sanabria',
+              telefono: '+58 414-2201928',
+              es_mayor_edad: true,
+            }
+          }
+          docentes={docentes}
+          onSendContactRequest={handleSendContactRequest}
+          onLogout={handleLogout}
+        />
+      )}
 
-        {/* VISTA VISITANTE */}
-        {selectedRole === 'VISITANTE' && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Catálogo Público</Text>
-            <Text style={styles.helperText}>
-              Por normativas de protección a menores de FundaOboeHJK, la reserva de horarios y la billetera Escrow requieren una cuenta verificada de estudiante o representante.
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+      {/* PANTALLA DEL ENCARGADO DE FUNDAOBOE: REVISIÓN DE DOCUMENTOS Y ACREDITACIÓN */}
+      {pantallaActiva === 'REVISION_FUNDAOBOE' && (
+        <FundaoboeReviewScreen
+          usuarioRevisor={
+            usuarioActivo || {
+              id: 'usr-rev-fundaoboe',
+              email: 'virginia.moreno@fundaoboe.org.ve',
+              rol: 'REVISION_FUNDAOBOE',
+              cedula_identidad: 'V-10.482.119',
+              nombre_completo: 'Coord. Virginia Moreno (Fundaoboe)',
+              telefono: '+58 212-5550100',
+              cargo_fundaoboe:
+                'Comité de Revisión y Acreditación Musical — Fundaoboe',
+            }
+          }
+          docentes={docentes}
+          onDecideTeacherStatus={handleDecideTeacherStatus}
+          onOpenAccreditedTeacherPreview={(docente) => {
+            setDocenteAcreditadoActivoId(docente.id);
+            setPantallaActiva('PERFIL_DOCENTE_ACREDITADO');
+          }}
+          onLogout={handleLogout}
+        />
+      )}
     </SafeAreaView>
   );
 }
+
+const AZUL_REY = '#0047AB';
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F4F7FC',
+    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
   },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  topRow: {
+  topNavigationBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 2,
+    borderBottomColor: '#475569',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  badge: {
+  rolePill: {
     backgroundColor: '#DBEAFE',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  badgeText: {
-    color: '#1D4ED8',
-    fontSize: 11.5,
-    fontWeight: '800',
-  },
-  switchBtn: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#1D4ED8',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  switchBtnText: {
-    color: '#1D4ED8',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  statusBanner: {
-    backgroundColor: '#0A192F',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  statusBannerTitle: {
-    color: '#60A5FA',
-    fontSize: 11,
-    fontWeight: '800',
-    marginBottom: 8,
-    letterSpacing: 0.4,
-  },
-  statusLine: {
-    color: '#CBD5E1',
-    fontSize: 12.5,
-    marginBottom: 4,
-  },
-  boldWhite: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-  boldGold: {
-    color: '#FDE68A',
-    fontWeight: '800',
-  },
-  boldGreen: {
-    color: '#34D399',
-    fontWeight: '800',
-  },
-  receiptPill: {
-    marginTop: 10,
-    backgroundColor: '#1E293B',
-    borderRadius: 8,
-    paddingVertical: 7,
     paddingHorizontal: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: '#34D399',
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: AZUL_REY,
   },
-  receiptPillText: {
-    color: '#E2E8F0',
+  rolePillText: {
+    color: AZUL_REY,
     fontSize: 11.5,
-    fontWeight: '600',
+    fontWeight: '900',
   },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 16,
+  switchSessionBtn: {
+    backgroundColor: AZUL_REY,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
   },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0A192F',
-    marginBottom: 10,
-  },
-  helperText: {
-    fontSize: 12.5,
-    color: '#64748B',
-    lineHeight: 18,
-    marginBottom: 14,
-  },
-  calcBox: {
-    backgroundColor: '#F8FAFC',
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 18,
-  },
-  calcLine: {
-    fontSize: 12,
-    color: '#334155',
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  primaryBtn: {
-    backgroundColor: '#1D4ED8',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  primaryBtnText: {
+  switchSessionBtnText: {
     color: '#FFFFFF',
     fontSize: 12.5,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: '900',
   },
 });

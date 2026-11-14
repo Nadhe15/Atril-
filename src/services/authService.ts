@@ -1,6 +1,11 @@
 // src/services/authService.ts
 import { supabase } from '../lib/supabase';
-import { RolAtril, Usuario } from '../types/atril.types';
+import {
+  EstadoAcreditacionDocente,
+  RepresentadoMenor,
+  RolAtril,
+  Usuario,
+} from '../types/atril.types';
 
 export interface RegistroUsuarioInput {
   email: string;
@@ -9,78 +14,109 @@ export interface RegistroUsuarioInput {
   cedula_identidad: string;
   nombre_completo: string;
   telefono: string;
+  es_mayor_edad?: boolean;
+  instrumento_interes?: string;
+  representados?: RepresentadoMenor[];
+  cargo_fundaoboe?: string;
+  perfil_docente_id?: string;
+  estado_acreditacion?: EstadoAcreditacionDocente;
 }
 
 export async function registrarUsuarioConRol(
   input: RegistroUsuarioInput
 ): Promise<Usuario> {
-  const { email, password, rol, cedula_identidad, nombre_completo, telefono } = input;
+  const {
+    email,
+    password,
+    rol,
+    cedula_identidad,
+    nombre_completo,
+    telefono,
+    es_mayor_edad,
+    instrumento_interes,
+    representados,
+    cargo_fundaoboe,
+    perfil_docente_id,
+    estado_acreditacion,
+  } = input;
 
-  if (rol !== 'alumno_tutor' && rol !== 'profesor_docente') {
+  if (rol !== 'DOCENTE' && rol !== 'ALUMNO' && rol !== 'REVISION_FUNDAOBOE') {
     throw new Error('Debes seleccionar un rol válido al registrarte.');
   }
 
-  const { data: authData, error: signUpError } = await supabase.auth.signUp({
-    email: email.trim().toLowerCase(),
-    password,
-    options: {
-      data: {
-        rol,
-        nombre_completo: nombre_completo.trim(),
-        cedula_identidad: cedula_identidad.trim(),
-        telefono: telefono.trim(),
-      },
-    },
-  });
-
-  if (signUpError || !authData.user) {
-    throw new Error(`Error en registro de autenticación: ${signUpError?.message ?? 'Sin usuario'}`);
-  }
-
-  const nuevoUsuario: Usuario = {
-    id: authData.user.id,
+  const usuarioLocal: Usuario = {
+    id: `usr-${Date.now()}`,
     email: email.trim().toLowerCase(),
     rol,
     cedula_identidad: cedula_identidad.trim(),
     nombre_completo: nombre_completo.trim(),
     telefono: telefono.trim(),
+    es_mayor_edad,
+    instrumento_interes,
+    representados,
+    cargo_fundaoboe,
+    perfil_docente_id,
+    estado_acreditacion,
   };
 
-  const { data: perfilData, error: perfilError } = await supabase
-    .from('usuarios')
-    .upsert([nuevoUsuario])
-    .select('*')
-    .single();
+  try {
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email: usuarioLocal.email,
+      password,
+      options: {
+        data: {
+          rol,
+          nombre_completo: usuarioLocal.nombre_completo,
+          cedula_identidad: usuarioLocal.cedula_identidad,
+          telefono: usuarioLocal.telefono,
+        },
+      },
+    });
 
-  if (perfilError || !perfilData) {
-    throw new Error(`Error al guardar perfil en tabla usuarios: ${perfilError?.message ?? ''}`);
+    if (!signUpError && authData?.user) {
+      usuarioLocal.id = authData.user.id;
+      await supabase.from('usuarios').upsert([
+        {
+          id: usuarioLocal.id,
+          email: usuarioLocal.email,
+          rol: usuarioLocal.rol,
+          cedula_identidad: usuarioLocal.cedula_identidad,
+          nombre_completo: usuarioLocal.nombre_completo,
+          telefono: usuarioLocal.telefono,
+        },
+      ]);
+    }
+  } catch {
+    // Modo local/offline: retorna el usuario creado en sesión local
   }
 
-  return perfilData as Usuario;
+  return usuarioLocal;
 }
 
 export async function iniciarSesionConRol(
   email: string,
   password: string
-): Promise<Usuario> {
-  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-    email: email.trim().toLowerCase(),
-    password,
-  });
+): Promise<Usuario | null> {
+  try {
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
 
-  if (signInError || !signInData.user) {
-    throw new Error(`Credenciales inválidas: ${signInError?.message ?? 'Acceso denegado'}`);
+    if (!signInError && signInData?.user) {
+      const { data: usuarioData } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('id', signInData.user.id)
+        .single();
+
+      if (usuarioData) {
+        return usuarioData as Usuario;
+      }
+    }
+  } catch {
+    // Continúa con validación de cuentas locales en la app
   }
-
-  const { data: usuarioData, error: userError } = await supabase
-    .from('usuarios')
-    .select('*')
-    .eq('id', signInData.user.id)
-    .single();
-
-  if (userError || !usuarioData) {
-    throw new Error(`No se encontró el perfil del usuario: ${userError?.message ?? ''}`);
-  }
-
-  return usuarioData as Usuario;
+  return null;
 }

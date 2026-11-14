@@ -1,39 +1,59 @@
 // src/types/atril.types.ts
 
-export type RolAtril = 'alumno_tutor' | 'profesor_docente';
+export type RolAtril = 'DOCENTE' | 'ALUMNO' | 'REVISION_FUNDAOBOE';
 
-export type ModalidadImparticion = 'presencial' | 'online' | 'hibrido';
+export type EstadoAcreditacionDocente =
+  | 'ACREDITADO'
+  | 'EN_REVISION'
+  | 'BANCO_TALENTOS'
+  | 'DESCARTADO';
+
+export type ModalidadEnsenanza = 'Presencial Caracas' | 'Online (Zoom)' | 'Híbrido';
 
 export type NivelMusical = 'iniciacion' | 'intermedio' | 'avanzado' | 'audicion_sinfonica';
 
-export type EstadoSesionClase =
-  | 'programada'
-  | 'declarada_docente'
-  | 'asistencia_validada'
-  | 'incumplimiento_reportado'
-  | 'cancelada';
+export interface ArchivoRecaudo {
+  nombreArchivo: string;
+  formato: 'JPG' | 'PNG' | 'PDF';
+  pesoMb: number;
+  cargado: boolean;
+  descripcion?: string;
+}
 
-export type EstadoCustodiaEscrow =
-  | 'bloqueado'
-  | 'liberado'
-  | 'reembolsado'
-  | 'en_disputa';
+export interface DocumentosAcreditacionDocente {
+  cedulaIdentidad: ArchivoRecaudo;
+  fotoPersonal: ArchivoRecaudo;
+  curriculumVitae: ArchivoRecaudo;
+  certificacionesMusicales: ArchivoRecaudo;
+}
 
-export type TipoMovimientoEscrow =
-  | 'recarga'
-  | 'bloqueo'
-  | 'liberacion'
-  | 'comision'
-  | 'reembolso';
-
-export interface Usuario {
+export interface PerfilDocenteAtril {
   id: string;
-  email: string;
-  rol: RolAtril;
-  cedula_identidad: string;
+  user_id: string;
   nombre_completo: string;
+  cedula_identidad: string;
+  email: string;
   telefono: string;
+  instrumento_principal: string;
+  instrumentos_certificados: string[];
+  acreditado_fundaoboe: boolean;
+  estado_acreditacion: EstadoAcreditacionDocente;
+  orquesta_o_conservatorio: string;
+  anos_experiencia: number;
+  trayectoria_biografia: string;
+  certificaciones_avales: string[];
+  modalidades: ModalidadEnsenanza[];
+  documentos: DocumentosAcreditacionDocente;
+  observacion_revisor?: string;
   created_at?: string;
+}
+
+export interface RepresentadoMenor {
+  id: string;
+  nombre_completo: string;
+  edad: number;
+  filiacion: 'Padre / Madre' | 'Representante Legal' | 'Tutor Autorizado';
+  instrumento_interes: string;
 }
 
 export interface SubperfilAlumno {
@@ -47,83 +67,30 @@ export interface SubperfilAlumno {
   created_at?: string;
 }
 
-export interface PerfilProfesor {
+export interface Usuario {
   id: string;
-  user_id: string;
-  bio: string;
-  instrumentos: string[];
-  modalidades: ModalidadImparticion[];
-  tarifa_usd: number;
-  verificado_fundaoboe: boolean;
+  email: string;
+  rol: RolAtril;
+  cedula_identidad: string;
+  nombre_completo: string;
+  telefono: string;
+  es_mayor_edad?: boolean;
+  instrumento_interes?: string;
+  representados?: RepresentadoMenor[];
+  cargo_fundaoboe?: string;
+  perfil_docente_id?: string;
+  estado_acreditacion?: EstadoAcreditacionDocente;
   created_at?: string;
 }
 
-export interface SesionClaseRow {
+export interface SolicitudContactoDocente {
   id: string;
-  abono_id: string | null;
-  tutor_id: string;
-  alumno_id: string;
-  profesor_id: string;
-  fecha_hora: string;
-  modalidad: ModalidadImparticion;
-  monto_bruto: number;
-  estado_sesion: EstadoSesionClase;
-  estado_escrow: EstadoCustodiaEscrow;
-  calificacion_tutor?: number | null;
-  motivo_incumplimiento?: string | null;
-  created_at: string;
+  docente_id: string;
+  nombre_docente: string;
+  instrumento_seleccionado: string;
+  nombre_solicitante: string;
+  beneficiario_alumno: string;
+  mensaje_consulta: string;
+  fecha_solicitud: string;
+  estado: 'PENDIENTE_VERIFICACION';
 }
-
-export interface MovimientoEscrowRow {
-  id: string;
-  sesion_id: string;
-  usuario_id: string;
-  tipo: TipoMovimientoEscrow;
-  monto_usd: number;
-  descripcion: string;
-  created_at: string;
-}
-
-export interface DesgloseHonorario {
-  bruto: number;
-  comisionPlataforma: number;
-  honorarioNeto: number;
-}
-
-export interface DesgloseAbono {
-  tipoClases: 6 | 8;
-  tarifaBaseUnitaria: number;
-  subtotalSinDescuento: number;
-  porcentajeAhorro: 10 | 12;
-  ahorroUsd: number;
-  totalAPagarContado: number;
-  equivalentePorClase: number;
-  comisionPlataformaTotal: number;
-  honorarioNetoDocenteTotal: number;
-}
-
-export interface BloquearFondosParams {
-  abonoId?: string;
-  tutorId: string;
-  alumnoId: string;
-  profesorId: string;
-  fechaHora: string;
-  modalidad: ModalidadImparticion;
-  montoBruto: number;
-}
-
-export interface ResumenBilleteraTutor {
-  rol: 'tutor';
-  userId: string;
-  saldoDisponibleUsd: number;
-  saldoRetenidoEscrowUsd: number;
-}
-
-export interface ResumenBilleteraProfesor {
-  rol: 'profesor';
-  userId: string;
-  saldoLiquidableAcumuladoUsd: number;
-  saldoPendientePorLiberarUsd: number;
-}
-
-export type ResumenBilletera = ResumenBilleteraTutor | ResumenBilleteraProfesor;

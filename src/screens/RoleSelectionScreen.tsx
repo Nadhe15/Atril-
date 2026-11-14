@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import SupabaseStatusBadge from '../components/SupabaseStatusBadge';
 
-export type SelectedAppRole = 'ALUMNO' | 'DOCENTE' | 'VISITANTE';
+export type SelectedAppRole = 'DOCENTE' | 'ALUMNO' | 'REVISION_FUNDAOBOE';
 
 interface RoleSelectionScreenProps {
   onSelectRole: (role: SelectedAppRole) => void;
@@ -25,121 +25,94 @@ export default function RoleSelectionScreen({ onSelectRole }: RoleSelectionScree
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Encabezado de Marca ATRIL */}
         <View style={styles.brandHeader}>
           <View style={styles.logoBox}>
             <Text style={styles.logoSymbol}>🎼</Text>
           </View>
           <View style={styles.brandTextContainer}>
-            <Text style={styles.brandTitle}>ATRIL</Text>
+            <Text style={styles.brandTitle}>ATRIL · FUNDAOBOE</Text>
             <View style={styles.brandBadge}>
-              <Text style={styles.brandBadgeText}>MERCADO MUSICAL TUTELADO</Text>
+              <Text style={styles.brandBadgeText}>CONEXIÓN MUSICAL VERIFICADA</Text>
             </View>
           </View>
         </View>
 
-        {/* Título e Instrucciones */}
         <View style={styles.headerBlock}>
-          <Text style={styles.mainTitle}>¿Cómo deseas ingresar?</Text>
+          <Text style={styles.mainTitle}>Selecciona tu rol de registro</Text>
           <Text style={styles.subtitle}>
-            Configura tu rol para adaptar tu experiencia operativa
+            Elige una de las tres opciones del ecosistema Fundaoboe
           </Text>
         </View>
 
-        {/* TARJETA 1: ROL ALUMNO / APODERADO */}
+        {/* OPCIÓN 1: DOCENTE */}
         <TouchableOpacity
-          style={[styles.roleCard, styles.studentCardBorder]}
-          activeOpacity={0.9}
-          onPress={() => onSelectRole('ALUMNO')}
-        >
-          <View style={styles.roleTagBlue}>
-            <Text style={styles.roleTagBlueText}>ROL ALUMNO / APODERADO</Text>
-          </View>
-
-          <Text style={styles.cardTitle}>Quiero aprender música</Text>
-          <Text style={styles.cardDescription}>
-            Accede a maestros verificados de FundaOboe, abonos protegidos por Escrow y clases en vivo.
-          </Text>
-
-          <View style={styles.cardFooterRow}>
-            <View style={styles.legalPill}>
-              <Text style={styles.legalPillText}>
-                Menores de edad: Registran sus padres
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.chooseButtonPrimary}
-              activeOpacity={0.85}
-              onPress={() => onSelectRole('ALUMNO')}
-            >
-              <Text style={styles.chooseButtonText}>Elegir →</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-
-        {/* TARJETA 2: ROL PROFESOR / DOCENTE */}
-        <TouchableOpacity
-          style={[styles.roleCard, styles.teacherCardBorder]}
+          style={styles.roleCard}
           activeOpacity={0.9}
           onPress={() => onSelectRole('DOCENTE')}
         >
           <View style={styles.roleTagAmber}>
-            <Text style={styles.roleTagAmberText}>ROL PROFESOR / MAESTRO</Text>
+            <Text style={styles.roleTagAmberText}>OPCIÓN 1 · DOCENTE / PROFESOR</Text>
           </View>
-
           <Text style={styles.cardTitle}>Soy maestro de música</Text>
           <Text style={styles.cardDescription}>
-            Imparte clases, gestiona tus horarios presenciales u online y cobra con liquidación fiduciaria segura.
+            Regístrate en 2 pasos adjuntando Cédula, Foto, CV y Certificaciones Musicales/Sinfónicas para acreditación de Fundaoboe.
           </Text>
-
-          <View style={styles.requirementsBox}>
-            <Text style={styles.requirementsText}>
-              Requisitos: CV, Diplomas + Entrevista FundaOboe
-            </Text>
-          </View>
-
-          <View style={styles.teacherActionRow}>
-            <TouchableOpacity
-              style={styles.chooseButtonDarkBlue}
-              activeOpacity={0.85}
-              onPress={() => onSelectRole('DOCENTE')}
-            >
-              <Text style={styles.chooseButtonText}>Elegir →</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.chooseButtonPrimary}
+            onPress={() => onSelectRole('DOCENTE')}
+          >
+            <Text style={styles.chooseButtonText}>Elegir Docente →</Text>
+          </TouchableOpacity>
         </TouchableOpacity>
 
-        {/* OPCIÓN SECUNDARIA: VISITANTE RESTRINGIDO */}
-        <View style={styles.visitorCard}>
-          <Text style={styles.visitorTitle}>Explorar catálogo en modo público</Text>
-          <Text style={styles.visitorDesc}>
-            Vista general de instrumentos y oferta formativa.
+        {/* OPCIÓN 2: ALUMNO O ESTUDIANTE */}
+        <TouchableOpacity
+          style={styles.roleCard}
+          activeOpacity={0.9}
+          onPress={() => onSelectRole('ALUMNO')}
+        >
+          <View style={styles.roleTagBlue}>
+            <Text style={styles.roleTagBlueText}>OPCIÓN 2 · ALUMNO O ESTUDIANTE</Text>
+          </View>
+          <Text style={styles.cardTitle}>Quiero aprender un instrumento</Text>
+          <Text style={styles.cardDescription}>
+            Explora los perfiles de docentes acreditados por instrumento. (Si es menor de 18 años, se registra su Padre o Representante Legal).
           </Text>
-          <Text style={styles.visitorWarning}>
-            Perfil de profesores y contratación bloqueados.
-          </Text>
-
           <TouchableOpacity
-            style={styles.visitorButton}
-            activeOpacity={0.8}
-            onPress={() => onSelectRole('VISITANTE')}
+            style={styles.chooseButtonPrimary}
+            onPress={() => onSelectRole('ALUMNO')}
           >
-            <Text style={styles.visitorButtonText}>
-              Continuar como visitante restringido →
-            </Text>
+            <Text style={styles.chooseButtonText}>Elegir Alumno →</Text>
           </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
 
-        {/* Pie Institucional + Diagnóstico de Conexión Backend en Vivo */}
+        {/* OPCIÓN 3: REVISIÓN (ENCARGADO FUNDAOBOE) */}
+        <TouchableOpacity
+          style={styles.roleCard}
+          activeOpacity={0.9}
+          onPress={() => onSelectRole('REVISION_FUNDAOBOE')}
+        >
+          <View style={styles.roleTagGreen}>
+            <Text style={styles.roleTagGreenText}>
+              OPCIÓN 3 · REVISIÓN (ENCARGADO FUNDAOBOE)
+            </Text>
+          </View>
+          <Text style={styles.cardTitle}>Revisión de Documentos Fundaoboe</Text>
+          <Text style={styles.cardDescription}>
+            Revisa las postulaciones docentes, verifica sus certificados musicales y otorga la acreditación oficial.
+          </Text>
+          <TouchableOpacity
+            style={styles.chooseButtonPrimary}
+            onPress={() => onSelectRole('REVISION_FUNDAOBOE')}
+          >
+            <Text style={styles.chooseButtonText}>Elegir Revisión →</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Al continuar aceptas los Términos de Servicio y Tutela
-          </Text>
           <Text style={styles.footerInstitution}>
-            FundaOboeHJK & USB — Caracas, 2026
+            Fundaoboe & USB — Caracas, 2026
           </Text>
-
           <SupabaseStatusBadge />
         </View>
       </ScrollView>
@@ -147,25 +120,23 @@ export default function RoleSelectionScreen({ onSelectRole }: RoleSelectionScree
   );
 }
 
-const AZUL_REY = '#1D4ED8';
-const AZUL_OSCURO = '#1E40AF';
-const FONDO_NEUTRO = '#F4F7FC';
+const AZUL_REY = '#0047AB';
+const AZUL_NOCHE = '#0A192F';
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: FONDO_NEUTRO,
+    backgroundColor: '#F4F7FC',
     paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
+    padding: 20,
     paddingBottom: 40,
   },
   brandHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 22,
   },
   logoBox: {
     width: 54,
@@ -174,11 +145,6 @@ const styles = StyleSheet.create({
     backgroundColor: AZUL_REY,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: AZUL_REY,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 4,
   },
   logoSymbol: {
     fontSize: 24,
@@ -188,10 +154,9 @@ const styles = StyleSheet.create({
     marginLeft: 14,
   },
   brandTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '900',
-    color: AZUL_OSCURO,
-    letterSpacing: 0.3,
+    color: AZUL_NOCHE,
   },
   brandBadge: {
     marginTop: 4,
@@ -202,55 +167,43 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   brandBadgeText: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '800',
     color: AZUL_REY,
-    letterSpacing: 0.4,
   },
   headerBlock: {
-    marginBottom: 22,
+    marginBottom: 18,
   },
   mainTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0A192F',
-    marginBottom: 6,
+    fontSize: 21,
+    fontWeight: '900',
+    color: AZUL_NOCHE,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 13.5,
-    fontWeight: '500',
-    color: '#64748B',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
   },
   roleCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 18,
-    marginBottom: 18,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  studentCardBorder: {
+    marginBottom: 16,
     borderWidth: 2,
-    borderColor: '#93C5FD',
-  },
-  teacherCardBorder: {
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: '#475569',
   },
   roleTagBlue: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#DBEAFE',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 6,
     alignSelf: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   roleTagBlueText: {
-    fontSize: 10.5,
-    fontWeight: '800',
+    fontSize: 11,
+    fontWeight: '900',
     color: AZUL_REY,
   },
   roleTagAmber: {
@@ -259,137 +212,58 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 6,
     alignSelf: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   roleTagAmberText: {
-    fontSize: 10.5,
-    fontWeight: '800',
-    color: '#D97706',
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#92400E',
+  },
+  roleTagGreen: {
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+  },
+  roleTagGreenText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#065F46',
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#0A192F',
-    marginBottom: 8,
+    fontWeight: '900',
+    color: AZUL_NOCHE,
+    marginBottom: 6,
   },
   cardDescription: {
-    fontSize: 12.5,
-    fontWeight: '400',
-    color: '#64748B',
-    lineHeight: 18,
-    marginBottom: 16,
-  },
-  cardFooterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  legalPill: {
-    flex: 1,
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  legalPillText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  requirementsBox: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginBottom: 12,
-  },
-  requirementsText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: AZUL_OSCURO,
-  },
-  teacherActionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    fontSize: 13.5,
+    color: '#1E293B',
+    lineHeight: 19,
+    marginBottom: 14,
+    fontWeight: '500',
   },
   chooseButtonPrimary: {
     backgroundColor: AZUL_REY,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
     borderRadius: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chooseButtonDarkBlue: {
-    backgroundColor: AZUL_OSCURO,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   chooseButtonText: {
     color: '#FFFFFF',
-    fontSize: 12.5,
-    fontWeight: '800',
-  },
-  visitorCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
-    borderStyle: 'dashed',
-    padding: 18,
-    marginTop: 4,
-    marginBottom: 24,
-  },
-  visitorTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0A192F',
-    marginBottom: 6,
-  },
-  visitorDesc: {
-    fontSize: 12,
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  visitorWarning: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#DC2626',
-    marginBottom: 14,
-  },
-  visitorButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.2,
-    borderColor: AZUL_REY,
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  visitorButtonText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: AZUL_REY,
+    fontSize: 14.5,
+    fontWeight: '900',
   },
   footer: {
     alignItems: 'center',
-    marginTop: 6,
-  },
-  footerText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#64748B',
-    marginBottom: 4,
+    marginTop: 8,
   },
   footerInstitution: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: AZUL_OSCURO,
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: AZUL_NOCHE,
   },
 });
