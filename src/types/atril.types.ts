@@ -1,6 +1,14 @@
 // src/types/atril.types.ts
 
-export type RolAtril = 'alumno_tutor' | 'profesor_docente' | 'representante';
+export type EstadoVerificacion = 'pendiente' | 'verificado' | 'suspendido';
+
+export type RolV5 = 'estudiante' | 'docente' | 'admin';
+
+export type RolAtril =
+  | 'alumno_tutor'
+  | 'profesor_docente'
+  | 'representante'
+  | RolV5;
 
 export type ModalidadImparticion = 'presencial_caracas' | 'online_en_vivo' | 'hibrido';
 export type ModalidadClase = ModalidadImparticion;
@@ -35,10 +43,16 @@ export interface Usuario {
   id: string;
   email: string;
   rol: RolAtril;
+  rol_v5?: RolV5;
+  estado_verificacion: EstadoVerificacion;
   tipo_estudiante?: TipoEstudiante | null;
   cedula_identidad: string;
   nombre_completo: string;
   telefono: string | null;
+  es_menor?: boolean;
+  nombre_representante?: string | null;
+  cedula_representante?: string | null;
+  area_docente?: string | null;
   created_at?: string;
 }
 
@@ -57,28 +71,59 @@ export interface PerfilProfesor {
   id: string;
   user_id: string;
   bio: string;
+  area_principal?: string;
+  areas_certificadas?: string[];
   instrumentos: string[];
   modalidades: ModalidadImparticion[];
-  tarifa_usd: number;
+  tarifa_usd?: number;
   verificado_fundaoboe: boolean;
   nivel_docente?: string;
   created_at?: string;
 }
 
 /**
- * Vista pública de un docente en el catálogo (sin teléfono, email ni cédula
- * para cumplir la política de protección comunitaria y evitar evasión de custodia).
+ * Vista académica de un docente en el catálogo v5.0 (enfocada en áreas/cátedras
+ * certificadas por FundaOboeHJK, sin exposición de datos privados ni tarifas/abonos).
  */
 export interface DocenteCatalogoItem {
   id: string;
   profesor_id: string;
   nombre: string;
   bio: string;
+  /** Área o cátedra principal que imparte el maestro (ej. "Oboe Sinfónico", "Cuatro Venezolano") */
+  areaPrincipal: string;
+  /** Lista de áreas y cátedras certificadas por FundaOboeHJK */
+  areasCertificadas: string[];
+  /** Alias mantenido por compatibilidad pasiva con componentes v3 */
   instrumentos: string[];
   modalidades: ModalidadClase[];
+  /** Mantenido en modo pasivo (0 por defecto en v5.0) para compatibilidad de tipos */
   tarifa_usd: number;
   nivel_docente: string;
   verificado_fundaoboe: boolean;
+  sedeReferencia?: string;
+}
+
+export interface ConversacionRow {
+  id: string;
+  alumno_id: string;
+  profesor_id: string;
+  area_interes: string | null;
+  nombre_alumno?: string;
+  nombre_profesor?: string;
+  ultimo_mensaje?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MensajeRow {
+  id: string;
+  conversacion_id: string;
+  remitente_id: string;
+  nombre_remitente?: string;
+  contenido: string;
+  leido: boolean;
+  created_at: string;
 }
 
 export interface BloqueHorarioDisponible {
@@ -111,8 +156,15 @@ export interface FichaDocenteDetalle extends DocenteCatalogoItem {
 
 export interface FiltrosCatalogoDocentes {
   modalidad?: ModalidadClase;
+  /** Filtro por área o cátedra musical (v5.0) */
+  area?: string;
+  /** Alias compatible con búsqueda por texto de cátedra/instrumento */
   instrumento?: string;
 }
+
+// ============================================================================
+// TIPOS EN MODO PASIVO (ESCROW Y BILLETERA — PRESERVADOS PARA FASES FUTURAS)
+// ============================================================================
 
 export interface SesionClaseRow {
   id: string;
@@ -209,9 +261,7 @@ export interface ResumenBilleteraTutor {
 export interface ResumenBilleteraProfesor {
   rol: 'profesor';
   userId: string;
-  /** Dinero retenido por clases programadas/iniciadas/reprogramadas pendientes */
   saldo_en_custodia: number;
-  /** Honorarios netos (85%) de clases dadas y validadas por código, acumulados para el corte de fin de mes de FundaOboeHJK */
   saldo_disponible_corte: number;
 }
 

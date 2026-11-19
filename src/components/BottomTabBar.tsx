@@ -7,9 +7,10 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
+import THEME from '../constants/theme';
 
-export type StudentTabKey = 'inicio' | 'buscar' | 'mis_clases' | 'billetera' | 'perfil';
-export type TeacherTabKey = 'agenda' | 'alumnos' | 'validar' | 'ingresos' | 'docente';
+export type StudentTabKey = 'profesores' | 'chat';
+export type TeacherTabKey = 'perfil' | 'chat';
 
 interface TabItem<T extends string> {
   key: T;
@@ -18,19 +19,13 @@ interface TabItem<T extends string> {
 }
 
 const STUDENT_TABS: TabItem<StudentTabKey>[] = [
-  { key: 'inicio', label: 'Inicio', icon: '🏠' },
-  { key: 'buscar', label: 'Buscar', icon: '🔍' },
-  { key: 'mis_clases', label: 'Mis Clases', icon: '🎼' },
-  { key: 'billetera', label: 'Billetera', icon: '💳' },
-  { key: 'perfil', label: 'Perfil', icon: '👤' },
+  { key: 'profesores', label: 'Profesores', icon: '🎼' },
+  { key: 'chat', label: 'Mensajes', icon: '💬' },
 ];
 
 const TEACHER_TABS: TabItem<TeacherTabKey>[] = [
-  { key: 'agenda', label: 'Agenda', icon: '📅' },
-  { key: 'alumnos', label: 'Alumnos', icon: '🎓' },
-  { key: 'validar', label: 'Validar', icon: '🔑' },
-  { key: 'ingresos', label: 'Ingresos', icon: '💼' },
-  { key: 'docente', label: 'Docente', icon: '🎻' },
+  { key: 'perfil', label: 'Mi Perfil', icon: '🎻' },
+  { key: 'chat', label: 'Mensajes', icon: '💬' },
 ];
 
 interface StudentBottomTabBarProps {
@@ -45,7 +40,9 @@ interface TeacherBottomTabBarProps {
   onSelectTab: (tab: TeacherTabKey) => void;
 }
 
-export type BottomTabBarProps = StudentBottomTabBarProps | TeacherBottomTabBarProps;
+export type BottomTabBarProps =
+  | StudentBottomTabBarProps
+  | TeacherBottomTabBarProps;
 
 export default function BottomTabBar(props: BottomTabBarProps) {
   if (props.variant === 'student') {
@@ -58,14 +55,18 @@ export default function BottomTabBar(props: BottomTabBarProps) {
               <TouchableOpacity
                 key={tab.key}
                 style={styles.tabButton}
-                activeOpacity={0.75}
+                activeOpacity={0.78}
                 hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
                 onPress={() => props.onSelectTab(tab.key)}
               >
-                <View style={[styles.iconPill, isActive && styles.iconPillActive]}>
+                <View
+                  style={[styles.iconPill, isActive && styles.iconPillActive]}
+                >
                   <Text style={styles.iconText}>{tab.icon}</Text>
                 </View>
-                <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                <Text
+                  style={[styles.tabLabel, isActive && styles.tabLabelActive]}
+                >
                   {tab.label}
                 </Text>
                 {isActive && <View style={styles.activeDot} />}
@@ -86,14 +87,18 @@ export default function BottomTabBar(props: BottomTabBarProps) {
             <TouchableOpacity
               key={tab.key}
               style={styles.tabButton}
-              activeOpacity={0.75}
+              activeOpacity={0.78}
               hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
               onPress={() => props.onSelectTab(tab.key)}
             >
-              <View style={[styles.iconPill, isActive && styles.iconPillActive]}>
+              <View
+                style={[styles.iconPill, isActive && styles.iconPillActive]}
+              >
                 <Text style={styles.iconText}>{tab.icon}</Text>
               </View>
-              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+              <Text
+                style={[styles.tabLabel, isActive && styles.tabLabelActive]}
+              >
                 {tab.label}
               </Text>
               {isActive && <View style={styles.activeDot} />}
@@ -105,27 +110,20 @@ export default function BottomTabBar(props: BottomTabBarProps) {
   );
 }
 
-const AZUL_REY = '#1D4ED8';
-
 const styles = StyleSheet.create({
   outerSafeWrapper: {
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#CBD5E1',
-    // Elevación ergonómica para no chocar con la barra de tareas/gestos de Android o iOS
-    paddingBottom: Platform.OS === 'android' ? 28 : Platform.OS === 'ios' ? 22 : 10,
+    backgroundColor: THEME.surface,
+    borderTopWidth: 1.5,
+    borderTopColor: THEME.borderUi,
+    paddingBottom:
+      Platform.OS === 'android' ? 28 : Platform.OS === 'ios' ? 22 : 10,
     paddingTop: 6,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 12,
   },
   barContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
   tabButton: {
     flex: 1,
@@ -134,31 +132,33 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   iconPill: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingVertical: 4,
     borderRadius: 999,
     marginBottom: 3,
   },
   iconPillActive: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: THEME.surfaceSub,
+    borderWidth: 1,
+    borderColor: THEME.primary,
   },
   iconText: {
     fontSize: 16,
   },
   tabLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '800',
+    color: THEME.textMuted,
   },
   tabLabelActive: {
-    fontWeight: '800',
-    color: AZUL_REY,
+    fontWeight: '900',
+    color: THEME.primary,
   },
   activeDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: AZUL_REY,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: THEME.primary,
     marginTop: 3,
   },
 });

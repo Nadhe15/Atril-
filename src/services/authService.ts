@@ -1,11 +1,46 @@
 // src/services/authService.ts
 import { supabase } from '../lib/supabase';
-import { RolAtril, Usuario } from '../types/atril.types';
+import {
+  EstadoVerificacion,
+  RolAtril,
+  RolV5,
+  TipoEstudiante,
+  Usuario,
+} from '../types/atril.types';
+import {
+  normalizarEstadoVerificacion,
+  normalizarRolV5,
+  obtenerUsuarioDeCacheAdmin,
+  sincronizarUsuarioEnCacheAdmin,
+} from './adminService';
 
-export type TipoEstudiante = 'apoderado' | 'estudiante_adulto';
+export type { TipoEstudiante };
 
 export interface PerfilUsuarioAtril extends Usuario {
+  rol_v5: RolV5;
+  estado_verificacion: EstadoVerificacion;
   tipo_estudiante?: TipoEstudiante | null;
+}
+
+/**
+ * Datos de entrada para el registro unificado v5.0 (Estudiante o Docente).
+ * Si es estudiante menor de edad (`esMenor: true` o `tipoEstudiante === 'apoderado'`),
+ * incluye los datos del padre o representante legal.
+ */
+export interface RegistroUnificadoV5Input {
+  nombreCompleto: string;
+  cedula: string;
+  telefono: string;
+  email: string;
+  password: string;
+  rol: 'estudiante' | 'docente';
+  /** Indica si el estudiante es menor de edad y requiere representante legal */
+  esMenor?: boolean;
+  tipoEstudiante?: TipoEstudiante;
+  nombreRepresentante?: string;
+  cedulaRepresentante?: string;
+  /** Área o cátedra principal cuando el rol es 'docente' (ej. "Oboe Sinfónico") */
+  areaDocente?: string;
 }
 
 export interface SignUpStudentInput {
@@ -14,6 +49,10 @@ export interface SignUpStudentInput {
   nombreCompleto: string;
   tipoEstudiante: TipoEstudiante;
   cedula?: string;
+  telefono?: string;
+  esMenor?: boolean;
+  nombreRepresentante?: string;
+  cedulaRepresentante?: string;
 }
 
 export interface RegistroUsuarioInput {
@@ -26,15 +65,124 @@ export interface RegistroUsuarioInput {
 }
 
 /**
- * Registra un estudiante (Apoderado o Estudiante Mayor de Edad) en Supabase Auth,
- * inyecta los metadatos para el trigger `on_auth_user_created` y asegura la fila en `public.usuarios`.
+ * Construye un `PerfilUsuarioAtril` normalizando `rol_v5` y `estado_verificacion`,
+ * respetando cualquier actualización administrativa en caché.
  */
-export async function signUpStudent(
-  input: SignUpStudentInput
+function enriquecerPerfilConEstadoV5(
+  base: Partial<Usuario> & { id: string; email: string },
+  metaFallback?: Record<string, unknown>
+): PerfilUsuarioAtril {
+  const enCacheAdmin = obtenerUsuarioDeCacheAdmin(base.id);
+  const meta = metaFallback ?? {};
+
+  const rolRaw =
+    (base.rol as string | undefined) ||
+    (enCacheAdmin?.rol as string | undefined) ||
+    (meta.rol as string | undefined) ||
+    'estudiante';
+
+  const rolV5 = normalizarRolV5(base.rol_v5 || enCacheAdmin?.rol_v5 || rolRaw);
+
+  // Priorizar estado_verificacion actualizado por el administrador en caché o en BD
+  const estadoRaw =
+    enCacheAdmin?.estado_verificacion ||
+    base.estado_verificacion ||
+    (meta.estado_verificacion as string | undefined) ||
+    'pendiente';
+
+  const estadoVerificacion = normalizarEstadoVerificacion(estadoRaw);
+
+  const esMenor =
+    typeof base.es_menor === 'boolean'
+      ? base.es_menor
+      : typeof meta.es_menor === 'boolean'
+      ? meta.es_menor
+      : base.tipo_estudiante === 'apoderado' || meta.tipo_estudiante === 'apoderado';
+
+  const tipoEstudiante: TipoEstudiante | null =
+    rolV5 === 'estudiante'
+      ? base.tipo_estudiante ??
+        enCacheAdmin?.tipo_estudiante ??
+        (meta.tipo_estudiante as TipoEstudiante | undefined) ??
+        (esMenor ? 'apoderado' : 'estudiante_adulto')
+      : null;
+
+  const perfil: PerfilUsuarioAtril = {
+    id: base.id,
+    email: base.email,
+    rol: (base.rol as RolAtril) || rolV5,
+    rol_v5: rolV5,
+    estado_verificacion: estadoVerificacion,
+    tipo_estudiante: tipoEstudiante,
+    cedula_identidad:
+      base.cedula_identidad ||
+      enCacheAdmin?.cedula_identidad ||
+      (meta.cedula_identidad as string | undefined) ||
+      '',
+    nombre_completo:
+      base.nombre_completo ||
+      enCacheAdmin?.nombre_completo ||
+      (meta.nombre_completo as string | undefined) ||
+      'Usuario ATRIL',
+    telefono:
+      base.telefono ??
+      enCacheAdmin?.telefono ??
+      (meta.telefono as string | undefined) ??
+      null,
+    es_menor: esMenor,
+    nombre_representante:
+      base.nombre_representante ??
+      enCacheAdmin?.nombre_representante ??
+      (meta.nombre_representante as string | null | undefined) ??
+      null,
+    cedula_representante:
+      base.cedula_representante ??
+      enCacheAdmin?.cedula_representante ??
+      (meta.cedula_representante as string | null | undefined) ??
+      null,
+    area_docente:
+      base.area_docente ??
+      enCacheAdmin?.area_docente ??
+      (meta.area_docente as string | null | undefined) ??
+      null,
+    created_at: base.created_at ?? enCacheAdmin?.created_at ?? new Date().toISOString(),
+  };
+
+  sincronizarUsuarioEnCacheAdmin(perfil);
+  return perfil;
+}
+
+/**
+ * Registro Unificado v5.0 (MVP):
+ * Registra un Estudiante (adulto o menor con representante) o un Docente en Supabase Auth
+ * y en `public.usuarios`, dejando `estado_verificacion = 'pendiente'` por defecto.
+ */
+export async function registrarUsuarioUnificado(
+  input: RegistroUnificadoV5Input
 ): Promise<PerfilUsuarioAtril> {
   const emailLimpio = input.email.trim().toLowerCase();
   const nombreLimpio = input.nombreCompleto.trim();
-  const cedulaLimpia = input.cedula?.trim() || null;
+  const cedulaLimpia = input.cedula.trim();
+  const telefonoLimpio = input.telefono.trim();
+  const rolElegido: 'estudiante' | 'docente' = input.rol;
+
+  const esMenor =
+    rolElegido === 'estudiante' &&
+    Boolean(input.esMenor || input.tipoEstudiante === 'apoderado');
+
+  const tipoEstudiante: TipoEstudiante | null =
+    rolElegido === 'estudiante'
+      ? esMenor
+        ? 'apoderado'
+        : input.tipoEstudiante ?? 'estudiante_adulto'
+      : null;
+
+  const nombreRepresentante = esMenor ? input.nombreRepresentante?.trim() || null : null;
+  const cedulaRepresentante = esMenor ? input.cedulaRepresentante?.trim() || null : null;
+  const areaDocente =
+    rolElegido === 'docente' ? input.areaDocente?.trim() || 'Oboe Sinfónico' : null;
+
+  const estadoInicial: EstadoVerificacion = 'pendiente';
 
   const { data: authData, error: signUpError } = await supabase.auth.signUp({
     email: emailLimpio,
@@ -42,9 +190,16 @@ export async function signUpStudent(
     options: {
       data: {
         nombre_completo: nombreLimpio,
-        rol: 'representante',
-        tipo_estudiante: input.tipoEstudiante,
+        rol: rolElegido,
+        rol_v5: rolElegido,
+        estado_verificacion: estadoInicial,
+        tipo_estudiante: tipoEstudiante,
         cedula_identidad: cedulaLimpia,
+        telefono: telefonoLimpio,
+        es_menor: esMenor,
+        nombre_representante: nombreRepresentante,
+        cedula_representante: cedulaRepresentante,
+        area_docente: areaDocente,
       },
     },
   });
@@ -55,16 +210,24 @@ export async function signUpStudent(
     );
   }
 
-  const filaUsuario: PerfilUsuarioAtril = {
+  const basePerfil: PerfilUsuarioAtril = {
     id: authData.user.id,
     email: emailLimpio,
     nombre_completo: nombreLimpio,
-    rol: 'alumno_tutor' as RolAtril,
-    tipo_estudiante: input.tipoEstudiante,
-    cedula_identidad: cedulaLimpia ?? '',
-    telefono: '',
+    rol: rolElegido,
+    rol_v5: rolElegido,
+    estado_verificacion: estadoInicial,
+    tipo_estudiante: tipoEstudiante,
+    cedula_identidad: cedulaLimpia,
+    telefono: telefonoLimpio,
+    es_menor: esMenor,
+    nombre_representante: nombreRepresentante,
+    cedula_representante: cedulaRepresentante,
+    area_docente: areaDocente,
+    created_at: new Date().toISOString(),
   };
 
+  // Intentar upsert con columnas v5 completas; si el esquema remoto aún tiene un enum v3 estricto, hacer fallback
   const { data: perfilData, error: perfilError } = await supabase
     .from('usuarios')
     .upsert(
@@ -73,8 +236,11 @@ export async function signUpStudent(
           id: authData.user.id,
           email: emailLimpio,
           nombre_completo: nombreLimpio,
-          tipo_estudiante: input.tipoEstudiante,
-          cedula_identidad: cedulaLimpia,
+          rol: rolElegido,
+          estado_verificacion: estadoInicial,
+          tipo_estudiante: tipoEstudiante,
+          cedula_identidad: cedulaLimpia || null,
+          telefono: telefonoLimpio || null,
         },
       ],
       { onConflict: 'id' }
@@ -83,21 +249,56 @@ export async function signUpStudent(
     .single();
 
   if (!perfilError && perfilData) {
-    return {
-      ...(perfilData as PerfilUsuarioAtril),
-      tipo_estudiante:
-        (perfilData as PerfilUsuarioAtril).tipo_estudiante ?? input.tipoEstudiante,
-    };
+    return enriquecerPerfilConEstadoV5(
+      {
+        ...(perfilData as Partial<Usuario>),
+        id: authData.user.id,
+        email: emailLimpio,
+        rol: rolElegido,
+        rol_v5: rolElegido,
+        estado_verificacion:
+          (perfilData as Partial<Usuario>).estado_verificacion ?? estadoInicial,
+        telefono: (perfilData as Partial<Usuario>).telefono ?? telefonoLimpio,
+        es_menor: esMenor,
+        nombre_representante: nombreRepresentante,
+        cedula_representante: cedulaRepresentante,
+        area_docente: areaDocente,
+      },
+      authData.user.user_metadata
+    );
   }
 
-  return filaUsuario;
+  // Fallback si la tabla remota aún no migró la columna `estado_verificacion` o `rol` v5
+  await supabase
+    .from('usuarios')
+    .upsert(
+      [
+        {
+          id: authData.user.id,
+          email: emailLimpio,
+          nombre_completo: nombreLimpio,
+          tipo_estudiante: tipoEstudiante,
+          cedula_identidad: cedulaLimpia || null,
+          telefono: telefonoLimpio || null,
+        },
+      ],
+      { onConflict: 'id' }
+    )
+    .select('*')
+    .maybeSingle();
+
+  sincronizarUsuarioEnCacheAdmin(basePerfil);
+  return basePerfil;
 }
 
+export const signUpUnified = registrarUsuarioUnificado;
+
 /**
- * Inicia sesión de un estudiante o representante contra Supabase Auth
- * y recupera su perfil enriquecido desde `public.usuarios`.
+ * Inicio de sesión unificado v5.0:
+ * Autentica contra Supabase Auth y retorna el perfil con su `rol` ('estudiante' | 'docente' | 'admin')
+ * y su `estado_verificacion` ('pendiente' | 'verificado' | 'suspendido').
  */
-export async function signInStudent(
+export async function iniciarSesionUnificado(
   email: string,
   password: string
 ): Promise<PerfilUsuarioAtril> {
@@ -116,7 +317,7 @@ export async function signInStudent(
   }
 
   const user = signInData.user;
-  const meta = user.user_metadata || {};
+  const meta = (user.user_metadata || {}) as Record<string, unknown>;
 
   const { data: usuarioData } = await supabase
     .from('usuarios')
@@ -125,30 +326,62 @@ export async function signInStudent(
     .maybeSingle();
 
   if (usuarioData) {
-    return {
-      ...(usuarioData as PerfilUsuarioAtril),
-      tipo_estudiante:
-        (usuarioData as PerfilUsuarioAtril).tipo_estudiante ??
-        (meta.tipo_estudiante as TipoEstudiante | undefined) ??
-        'estudiante_adulto',
-    };
+    return enriquecerPerfilConEstadoV5(
+      {
+        ...(usuarioData as Partial<Usuario>),
+        id: user.id,
+        email: user.email || emailLimpio,
+      },
+      meta
+    );
   }
 
-  return {
-    id: user.id,
-    email: user.email || emailLimpio,
-    rol: (meta.rol as RolAtril) || 'alumno_tutor',
-    nombre_completo: (meta.nombre_completo as string) || 'Estudiante ATRIL',
-    cedula_identidad: (meta.cedula_identidad as string) || '',
-    telefono: (meta.telefono as string) || '',
-    tipo_estudiante:
-      (meta.tipo_estudiante as TipoEstudiante) || 'estudiante_adulto',
-  };
+  return enriquecerPerfilConEstadoV5(
+    {
+      id: user.id,
+      email: user.email || emailLimpio,
+    },
+    meta
+  );
+}
+
+export const signInUnified = iniciarSesionUnificado;
+
+/**
+ * Wrapper compatible para registro de estudiante (Apoderado o Estudiante Adulto).
+ * Deja `estado_verificacion = 'pendiente'` por defecto.
+ */
+export async function signUpStudent(
+  input: SignUpStudentInput
+): Promise<PerfilUsuarioAtril> {
+  return registrarUsuarioUnificado({
+    email: input.email,
+    password: input.password,
+    nombreCompleto: input.nombreCompleto,
+    cedula: input.cedula || '',
+    telefono: input.telefono || '',
+    rol: 'estudiante',
+    tipoEstudiante: input.tipoEstudiante,
+    esMenor: input.esMenor ?? input.tipoEstudiante === 'apoderado',
+    nombreRepresentante: input.nombreRepresentante,
+    cedulaRepresentante: input.cedulaRepresentante,
+  });
+}
+
+/**
+ * Wrapper compatible para inicio de sesión que retorna el perfil enriquecido
+ * con `rol`, `rol_v5` y `estado_verificacion`.
+ */
+export async function signInStudent(
+  email: string,
+  password: string
+): Promise<PerfilUsuarioAtril> {
+  return iniciarSesionUnificado(email, password);
 }
 
 /**
  * Recupera la sesión actual almacenada en AsyncStorage / Supabase Auth
- * y retorna el perfil enriquecido desde `public.usuarios` (o `null` si no hay sesión).
+ * y retorna el perfil enriquecido con `rol`, `rol_v5` y `estado_verificacion`.
  */
 export async function getCurrentSessionUser(): Promise<PerfilUsuarioAtril | null> {
   try {
@@ -160,7 +393,7 @@ export async function getCurrentSessionUser(): Promise<PerfilUsuarioAtril | null
     }
 
     const user = sessionData.session.user;
-    const meta = user.user_metadata || {};
+    const meta = (user.user_metadata || {}) as Record<string, unknown>;
 
     const { data: usuarioData } = await supabase
       .from('usuarios')
@@ -169,25 +402,23 @@ export async function getCurrentSessionUser(): Promise<PerfilUsuarioAtril | null
       .maybeSingle();
 
     if (usuarioData) {
-      return {
-        ...(usuarioData as PerfilUsuarioAtril),
-        tipo_estudiante:
-          (usuarioData as PerfilUsuarioAtril).tipo_estudiante ??
-          (meta.tipo_estudiante as TipoEstudiante | undefined) ??
-          'estudiante_adulto',
-      };
+      return enriquecerPerfilConEstadoV5(
+        {
+          ...(usuarioData as Partial<Usuario>),
+          id: user.id,
+          email: user.email || '',
+        },
+        meta
+      );
     }
 
-    return {
-      id: user.id,
-      email: user.email || '',
-      rol: (meta.rol as RolAtril) || 'alumno_tutor',
-      nombre_completo: (meta.nombre_completo as string) || 'Estudiante ATRIL',
-      cedula_identidad: (meta.cedula_identidad as string) || '',
-      telefono: (meta.telefono as string) || '',
-      tipo_estudiante:
-        (meta.tipo_estudiante as TipoEstudiante) || 'estudiante_adulto',
-    };
+    return enriquecerPerfilConEstadoV5(
+      {
+        id: user.id,
+        email: user.email || '',
+      },
+      meta
+    );
   } catch {
     return null;
   }
@@ -206,73 +437,20 @@ export async function signOut(): Promise<void> {
 export async function registrarUsuarioConRol(
   input: RegistroUsuarioInput
 ): Promise<Usuario> {
-  const { email, password, rol, cedula_identidad, nombre_completo, telefono } = input;
-
-  if (rol !== 'alumno_tutor' && rol !== 'profesor_docente') {
-    throw new Error('Debes seleccionar un rol válido al registrarte.');
-  }
-
-  const { data: authData, error: signUpError } = await supabase.auth.signUp({
-    email: email.trim().toLowerCase(),
-    password,
-    options: {
-      data: {
-        rol,
-        nombre_completo: nombre_completo.trim(),
-        cedula_identidad: cedula_identidad.trim(),
-        telefono: telefono.trim(),
-      },
-    },
+  const rolV5 = normalizarRolV5(input.rol);
+  return registrarUsuarioUnificado({
+    email: input.email,
+    password: input.password,
+    nombreCompleto: input.nombre_completo,
+    cedula: input.cedula_identidad,
+    telefono: input.telefono,
+    rol: rolV5 === 'docente' ? 'docente' : 'estudiante',
   });
-
-  if (signUpError || !authData.user) {
-    throw new Error(`Error en registro de autenticación: ${signUpError?.message ?? 'Sin usuario'}`);
-  }
-
-  const nuevoUsuario: Usuario = {
-    id: authData.user.id,
-    email: email.trim().toLowerCase(),
-    rol,
-    cedula_identidad: cedula_identidad.trim(),
-    nombre_completo: nombre_completo.trim(),
-    telefono: telefono.trim(),
-  };
-
-  const { data: perfilData, error: perfilError } = await supabase
-    .from('usuarios')
-    .upsert([nuevoUsuario])
-    .select('*')
-    .single();
-
-  if (perfilError || !perfilData) {
-    throw new Error(`Error al guardar perfil en tabla usuarios: ${perfilError?.message ?? ''}`);
-  }
-
-  return perfilData as Usuario;
 }
 
 export async function iniciarSesionConRol(
   email: string,
   password: string
 ): Promise<Usuario> {
-  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-    email: email.trim().toLowerCase(),
-    password,
-  });
-
-  if (signInError || !signInData.user) {
-    throw new Error(`Credenciales inválidas: ${signInError?.message ?? 'Acceso denegado'}`);
-  }
-
-  const { data: usuarioData, error: userError } = await supabase
-    .from('usuarios')
-    .select('*')
-    .eq('id', signInData.user.id)
-    .single();
-
-  if (userError || !usuarioData) {
-    throw new Error(`No se encontró el perfil del usuario: ${userError?.message ?? ''}`);
-  }
-
-  return usuarioData as Usuario;
+  return iniciarSesionUnificado(email, password);
 }
