@@ -5,10 +5,10 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   Platform,
   StatusBar as RNStatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import THEME from '../constants/theme';
 
 export interface SplashScreenProps {
@@ -26,7 +26,7 @@ export default function SplashScreen({ onEnter }: SplashScreenProps) {
           </View>
 
           <View style={styles.goldBadge}>
-            <Text style={styles.goldBadgeText}>FUNDACIÓN VENEZOLANA DEL OBOE</Text>
+            <Text style={styles.goldBadgeText}>FUNDACIÓN VENEZOLANA</Text>
           </View>
 
           <Text style={styles.tagline}>
@@ -45,7 +45,7 @@ export default function SplashScreen({ onEnter }: SplashScreenProps) {
           </TouchableOpacity>
 
           <Text style={styles.footerNote}>
-            FundaOboeHJK & Universidad Simón Bolívar — Caracas
+            FundaOboeHJK — Caracas
           </Text>
         </View>
       </View>

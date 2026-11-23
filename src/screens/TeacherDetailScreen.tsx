@@ -24,7 +24,7 @@ export interface TeacherDetailScreenProps {
 }
 
 const ETIQUETA_MODALIDAD: Record<ModalidadClase, string> = {
-  presencial_caracas: 'Presencial Caracas (Sede FundaOboeHJK)',
+  presencial_caracas: 'Presencial Caracas',
   online_en_vivo: 'Aula Virtual en Vivo',
   hibrido: 'Híbrido (Presencial y Virtual)',
 };

@@ -137,7 +137,7 @@ export default function RoleSelectionScreen({ onSelectRole }: RoleSelectionScree
             Al continuar aceptas los Términos de Servicio y Tutela
           </Text>
           <Text style={styles.footerInstitution}>
-            FundaOboeHJK & USB — Caracas, 2026
+            FundaOboeHJK — Caracas, 2026
           </Text>
 
           <SupabaseStatusBadge />

@@ -5,12 +5,12 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
   Platform,
   StatusBar as RNStatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import THEME from '../constants/theme';
 import {
   getCurrentSessionUser,
@@ -135,7 +135,7 @@ export default function PendingVerificationScreen({
             📧 Proceso de Acreditación Externa con Fundaoboe
           </Text>
           <Text style={styles.bodyText}>
-            La verificación de identidad, recepción de recaudos documentales y coordinación de entrevista se realizan de forma externa por correo electrónico con el comité de la Fundación Venezolana del Oboe.
+            La verificación de identidad, recepción de recaudos documentales y coordinación de entrevista se realizan de forma externa por correo electrónico con el comité de la Fundación Venezolana.
           </Text>
 
           <View style={styles.emailReferenceBox}>

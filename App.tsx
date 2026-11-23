@@ -5,11 +5,10 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
-  Platform,
-  StatusBar as RNStatusBar,
+  KeyboardAvoidingView,
 } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import THEME from './src/constants/theme';
 import SplashScreen from './src/screens/SplashScreen';
@@ -40,6 +39,14 @@ import {
 } from './src/types/atril.types';
 
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppContent />
+    </SafeAreaProvider>
+  );
+}
+
+function AppContent() {
   const [mostrarSplash, setMostrarSplash] = useState<boolean>(true);
   const [usuarioActual, setUsuarioActual] =
     useState<PerfilUsuarioAtril | null>(null);
@@ -153,7 +160,7 @@ export default function App() {
   const esDocente = rolActivo === 'docente';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar style="dark" />
 
       {/* Barra Superior Institucional para Usuario Verificado */}
@@ -185,11 +192,12 @@ export default function App() {
           />
         </View>
       ) : (
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
+        <KeyboardAvoidingView style={styles.flex1} behavior="padding">
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
           {/* 5. Rol 'estudiante' verificado */}
           {!esDocente && (
             <>
@@ -250,7 +258,8 @@ export default function App() {
               )}
             </>
           )}
-        </ScrollView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       )}
 
       {/* Barra de Navegación Inferior v5.0 */}
@@ -282,7 +291,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: THEME.background,
-    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
+  },
+  flex1: {
+    flex: 1,
   },
   topHeaderBar: {
     flexDirection: 'row',

@@ -1,0 +1,437 @@
+% ============================================================================
+% DOCUMENTO: Guia_Evaluacion_ATRIL.tex
+% PROYECTO:  Plataforma ATRIL v5.0 (MVP) — FundaOboeHJK & USB
+% MATERIA:   PS-1115: Sistemas de Información I (Trimestre Sep-Dic 2026)
+% LAB 6:     Pruebas de Software — Guía de Pruebas y Coevaluación (Equipo 1)
+% COMPILAR:  Overleaf (pdfLaTeX / XeLaTeX) — Exactamente 2 páginas
+% ============================================================================
+\documentclass[10pt,letterpaper]{article}
+
+% --- Paquetes Obligatorios y de Maquetación ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[scaled=0.94]{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+\usepackage[
+  letterpaper,
+  top=1.25cm,
+  bottom=1.65cm,
+  left=1.40cm,
+  right=1.40cm,
+  headheight=14pt,
+  footskip=20pt
+]{geometry}
+
+\usepackage[table]{xcolor}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{amssymb}
+\usepackage[hidelinks]{hyperref}
+
+% --- Paleta Institucional ATRIL v5.0 (src/constants/theme.ts) ---
+\definecolor{atrilPrimary}{HTML}{0047AB}      % Azul Rey (#0047AB)
+\definecolor{atrilPrimaryHover}{HTML}{003580} % Azul Rey Oscuro (#003580)
+\definecolor{atrilNavy}{HTML}{0A192F}         % Azul Marino Profundo (#0A192F)
+\definecolor{atrilBg}{HTML}{F4F7FC}           % Fondo Suave (#F4F7FC)
+\definecolor{atrilSurface}{HTML}{FFFFFF}      % Blanco (#FFFFFF)
+\definecolor{atrilSurfaceSub}{HTML}{EBF2FA}   % Superficie Secundaria (#EBF2FA)
+\definecolor{atrilGold}{HTML}{FFBF00}         % Acento Dorado (#FFBF00)
+
+% --- Estados Semánticos (WCAG AA) ---
+\definecolor{atrilSuccess}{HTML}{047857}
+\definecolor{atrilSuccessTint}{HTML}{D1FAE5}
+\definecolor{atrilSuccessText}{HTML}{065F46}
+\definecolor{atrilWarnTint}{HTML}{FEF3C7}
+\definecolor{atrilWarnText}{HTML}{92400E}
+\definecolor{atrilDanger}{HTML}{C81E1E}
+\definecolor{atrilDangerTint}{HTML}{FEE2E2}
+\definecolor{atrilDangerText}{HTML}{991B1B}
+\definecolor{atrilTextBody}{HTML}{1E293B}
+\definecolor{atrilTextMuted}{HTML}{334155}
+\definecolor{atrilBorder}{HTML}{CBD5E1}
+\definecolor{termComment}{HTML}{94A3B8}
+
+% --- Configuración Global de Párrafo y Tablas ---
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\renewcommand{\arraystretch}{1.32}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+% --- Configuración de Encabezado y Pie de Página (fancyhdr) ---
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0.6pt}
+\renewcommand{\footrule}{\hbox to\headwidth{\color{atrilBorder}\leaders\hrule height \footrulewidth\hfill}}
+
+\fancyfoot[L]{%
+  \scriptsize\color{atrilTextMuted}%
+  \textbf{Equipo ATRIL (FundaOboeHJK)} --- José Daniel Torbet, Samuel Sanabria, Nadheska García, Ernesto Barreto%
+}
+\fancyfoot[R]{%
+  \scriptsize\color{atrilTextMuted}%
+  \ifnum\value{page}=1%
+    \textbf{Página 1 de 2. Guía de Evaluación}%
+  \else%
+    \textbf{Página 2 de 2. Documento Oficial de Coevaluación}%
+  \fi%
+}
+
+% --- Macros Visuales Corporativos ---
+\newcommand{\secbadge}[2]{%
+  \vspace{0.22cm}%
+  \noindent\colorbox{atrilNavy}{\strut\hspace{4pt}\textcolor{atrilGold}{\textbf{\small #1}}\hspace{4pt}}%
+  \hspace{6pt}{\large\bfseries\color{atrilNavy}#2}\par\vspace{0.12cm}%
+}
+
+\newcommand{\pillRolAdmin}{\colorbox{atrilWarnTint}{\textcolor{atrilWarnText}{\textbf{\scriptsize ADMIN}}}}
+\newcommand{\pillRolDocente}{\colorbox{atrilSurfaceSub}{\textcolor{atrilPrimary}{\textbf{\scriptsize DOCENTE}}}}
+\newcommand{\pillRolEstudiante}{\colorbox{atrilSurfaceSub}{\textcolor{atrilNavy}{\textbf{\scriptsize ESTUDIANTE}}}}
+
+\newcommand{\pillVerificado}{\colorbox{atrilSuccessTint}{\textcolor{atrilSuccessText}{\textbf{\scriptsize VERIFICADO}}}}
+\newcommand{\pillPendiente}{\colorbox{atrilWarnTint}{\textcolor{atrilWarnText}{\textbf{\scriptsize PENDIENTE}}}}
+
+\newcommand{\codeinline}[1]{\colorbox{atrilSurfaceSub}{\texttt{\footnotesize\textcolor{atrilNavy}{#1}}}}
+
+% --- Configuración de Listings para Bloques de Terminal ---
+\lstset{
+  basicstyle=\ttfamily\footnotesize\color{white},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  commentstyle=\color{termComment}\itshape,
+  literate=
+    {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+    {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+    {ñ}{{\~n}}1 {Ñ}{{\~N}}1
+}
+
+\begin{document}
+\color{atrilTextBody}
+
+% ============================================================================
+% PÁGINA 1: GUÍA DE PRUEBAS Y COEVALUACIÓN
+% ============================================================================
+
+% --- Encabezado Página 1 ---
+\noindent
+\begin{tabularx}{\textwidth}{@{}Y r@{}}
+  \begin{minipage}[t]{\linewidth}
+    {\LARGE\bfseries\color{atrilNavy} GUÍA DE PRUEBAS Y COEVALUACIÓN}\\[3pt]
+    {\normalsize\bfseries\color{atrilPrimary} Plataforma ATRIL --- Red de Conexión Docente y Chat Interno (FundaOboeHJK)}
+  \end{minipage}
+  &
+  \begin{minipage}[t]{0.36\textwidth}\raggedleft\footnotesize\color{atrilTextMuted}
+    \textbf{\color{atrilNavy}Universidad Simón Bolívar}\\
+    PS-1115: Sistemas de Información I\\
+    Laboratorio 6: Pruebas de Software\\
+    Trimestre Sep--Dic 2026
+  \end{minipage}
+\end{tabularx}
+
+\vspace{0.14cm}
+{\color{atrilPrimary}\hrule height 2pt}
+{\color{atrilGold}\hrule height 1pt}
+\vspace{0.18cm}
+
+% --- Bloque de Acceso y Despliegue ---
+\begin{tcolorbox}[
+  colback=atrilBg,
+  colframe=atrilPrimary,
+  boxrule=0.9pt,
+  arc=4pt,
+  left=8pt,
+  right=8pt,
+  top=5pt,
+  bottom=5pt
+]
+  \textbf{\small\color{atrilNavy} Arquitectura Operativa ATRIL --- Entorno Multiplataforma (Expo Web / Móvil + Supabase BaaS)}
+  {\footnotesize\color{atrilTextBody}
+  La versión actual implementa el flujo institucional tutelado por \textbf{FundaOboeHJK}: vitrina pública protegida por candado, postulación docente y verificación estudiantil (adultos y menores con representante legal), consola Superadmin y mensajería interna en tiempo real.}
+\end{tcolorbox}
+
+\vspace{0.10cm}
+
+% Tarjetas 2x2 de Acceso y Despliegue
+\noindent
+\begin{minipage}[t]{0.49\textwidth}
+  \begin{tcolorbox}[colback=white,colframe=atrilBorder,boxrule=0.7pt,arc=3pt,left=7pt,right=7pt,top=4pt,bottom=4pt,height=1.30cm,valign=center]
+    {\scriptsize\bfseries\color{atrilTextMuted} APLICACIÓN EN VIVO / EXPO WEB}\\[1pt]
+    {\scriptsize\bfseries\color{atrilPrimary}\url{https://github.com/Nadhe15/Atril-/tree/feature/auth-y-reserva-modular}}\\[1pt]
+    {\scriptsize\color{atrilTextMuted} URL Web: \texttt{https://visionary-cocada-c37d8f.netlify.app} \textbar\ Local: \texttt{npx expo start --web}}
+  \end{tcolorbox}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+  \begin{tcolorbox}[colback=white,colframe=atrilBorder,boxrule=0.7pt,arc=3pt,left=7pt,right=7pt,top=4pt,bottom=4pt,height=1.30cm,valign=center]
+    {\scriptsize\bfseries\color{atrilTextMuted} BACKEND / BaaS (AUTENTICACIÓN Y TIEMPO REAL)}\\[1pt]
+    {\footnotesize\bfseries\color{atrilPrimary} Supabase Auth + PostgreSQL + Realtime (RLS)}\\[1pt]
+    {\scriptsize\color{atrilTextMuted} Con caché local (\texttt{adminService} / \texttt{chatService})}
+  \end{tcolorbox}
+\end{minipage}
+
+\vspace{0.08cm}
+
+\noindent
+\begin{minipage}[t]{0.49\textwidth}
+  \begin{tcolorbox}[colback=white,colframe=atrilBorder,boxrule=0.7pt,arc=3pt,left=7pt,right=7pt,top=4pt,bottom=4pt,height=1.12cm,valign=center]
+    {\scriptsize\bfseries\color{atrilTextMuted} REPOSITORIO DE CÓDIGO FUENTE (GITHUB)}\\[1pt]
+    {\scriptsize\bfseries\color{atrilPrimary}\url{https://github.com/Nadhe15/Atril-/tree/feature/auth-y-reserva-modular}}
+  \end{tcolorbox}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+  \begin{tcolorbox}[colback=white,colframe=atrilBorder,boxrule=0.7pt,arc=3pt,left=7pt,right=7pt,top=4pt,bottom=4pt,height=1.12cm,valign=center]
+    {\scriptsize\bfseries\color{atrilTextMuted} CONTRASEÑA UNIVERSAL / ACCESO DEMO}\\[1pt]
+    {\footnotesize\bfseries\color{atrilNavy} Botonera Demo 1-Clic (\texttt{AuthLandingScreen}) \textbar\ Mín. 6 caract.}
+  \end{tcolorbox}
+\end{minipage}
+
+% --- Sección 1: Cuentas de Acceso Preconfiguradas ---
+\secbadge{1}{Cuentas de Acceso Preconfiguradas (De acceso rápido para la Demo)}
+{\footnotesize\color{atrilTextMuted}
+Cuentas reales preconfiguradas en \texttt{src/screens/AuthLandingScreen.tsx} y semillas en \texttt{src/services/adminService.ts} / Supabase:}
+
+\vspace{0.10cm}
+\noindent
+{\footnotesize
+\begin{tabularx}{\textwidth}{|>{\ttfamily\scriptsize}l|Y|c|c|l|}
+  \hline
+  \rowcolor{atrilNavy}
+  \textcolor{white}{\textbf{\textsf{Usuario / Correo}}} &
+  \textcolor{white}{\textbf{\textsf{Nombre Completo (Cátedra / Condición)}}} &
+  \textcolor{white}{\textbf{\textsf{Rol Sistema}}} &
+  \textcolor{white}{\textbf{\textsf{Estado Verif.}}} &
+  \textcolor{white}{\textbf{\textsf{Acceso / Contraseña}}} \\
+  \hline
+  \rowcolor{atrilBg}
+  virginia.admin@fundaoboe.org.ve &
+  \textbf{Admin} (Superadmin Fundaoboe) &
+  \pillRolAdmin &
+  \pillVerificado &
+  \codeinline{|Demo| Admin} \\
+  \hline
+  \rowcolor{white}
+  jg.sanabria@fundaoboe.org &
+  \textbf{Mtro. José Gregorio Sanabria} (\emph{Oboe Sinfónico}) &
+  \pillRolDocente &
+  \pillVerificado &
+  \codeinline{Demo: Profesor Verificado} \\
+  \hline
+  \rowcolor{atrilBg}
+  samuel.sanabria@usb.ve &
+  \textbf{Samuel Sanabria} (\emph{Estudiante Adulto \textbullet\ USB}) &
+  \pillRolEstudiante &
+  \pillVerificado &
+  \codeinline{Demo: Estudiante Verificado} \\
+  \hline
+  \rowcolor{white}
+  carlos.reveron@conservatorio.ve &
+  \textbf{Prof. Carlos Reverón} (\emph{Guitarra Clásica}) &
+  \pillRolDocente &
+  \pillPendiente &
+  \codeinline{Demo: Usuario Pendiente} \\
+  \hline
+  \rowcolor{atrilBg}
+  carolina.mendoza@correo.com &
+  \textbf{Mateo Mendoza} (\emph{Menor \textbullet\ Rep: Carolina Mendoza}) &
+  \pillRolEstudiante &
+  \pillPendiente &
+  \codeinline{Semilla Admin (usr-pend-02)} \\
+  \hline
+\end{tabularx}
+}
+
+\vspace{0.08cm}
+{\scriptsize\color{atrilTextMuted}
+\textbf{Catálogo Institucional Precargado (\texttt{teacherCatalogService.ts}):} 5 docentes verificados: \emph{Mtro. José Gregorio Sanabria} (Oboe Sinfónico), \emph{Prof. Valentina Meneses} (Fagot), \emph{Mtro. Leonardo Montilla} (Guitarra Clásica y Cuatro), \emph{Prof. Mariana Salcedo} (Violín) y \emph{Prof. Adriana Villamizar} (Canto).}
+
+% --- Sección 2: Procedimiento de Verificación en la Interfaz ---
+\secbadge{2}{Procedimiento de Verificación en la Interfaz}
+
+\begin{itemize}[leftmargin=0.55cm, itemsep=3.5pt, topsep=2pt, parsep=0pt]
+  \item[\textcolor{atrilPrimary}{\textbf{$\checkmark$}}] \footnotesize
+  \textbf{1. Pantalla de Bienvenida (\texttt{SplashScreen}) y Vista Externa Pública (\texttt{AuthLandingScreen}):}
+  Al abrir la app se despliega la portada institucional de la \emph{Fundación Venezolana}. Pulse \codeinline{Ingresar a la Plataforma $\rightarrow$} y explore las pestañas superiores \textbf{Quiénes Somos} y \textbf{Profesores (Vista Externa)}, comprobando que los perfiles públicos muestran su cátedra pero mantienen los datos de contacto bloqueados por candado (\codeinline{Inicia sesión para ver perfil}).
+
+  \item[\textcolor{atrilPrimary}{\textbf{$\checkmark$}}] \footnotesize
+  \textbf{2. Registro y Estado Pendiente (\texttt{PendingVerificationScreen}):}
+  En la pestaña de autenticación, seleccione \codeinline{Postularse / Verificarse}. Pruebe \textbf{Postularse como Profesor} (eligiendo una de las 8 cátedras oficiales) o \textbf{Verificarse como Estudiante} (probando la opción \emph{Menor de 18 Con Representante}, que valida nombre y cédula del tutor). Verifique que tras registrarse la cuenta queda bloqueada en \texttt{PendingVerificationScreen} en espera de acreditación externa por FundaOboe (\texttt{acreditacion@fundaoboe.org.ve}).
+
+  \item[\textcolor{atrilPrimary}{\textbf{$\checkmark$}}] \footnotesize
+  \textbf{3. Accesos Rápidos de Prueba (Demo Toolbar):}
+  En el modo \emph{Iniciar Sesión} de \texttt{AuthLandingScreen}, utilice la botonera inferior \textbf{Accesos Rápidos de Prueba (Demo)} para ingresar en 1 clic como \codeinline{Admin}, \codeinline{Profesor Verificado}, \codeinline{Estudiante Verificado} o \codeinline{Usuario Pendiente}. Dentro de cualquier sesión activa, pulse \codeinline{$\rightleftarrows$ Cambiar cuenta / Salir} en la barra superior para alternar de rol sin cerrar ni crear cuentas manualmente.
+
+  \item[\textcolor{atrilPrimary}{\textbf{$\checkmark$}}] \footnotesize
+  \textbf{4. Panel Superadmin (\texttt{AdminDashboardScreen}):}
+  Ingrese como \codeinline{Admin }, filtre los usuarios registrados por estado (\emph{Todos, Pendientes, Verificados, Suspendidos}) y por rol (\emph{Profesor, Estudiante}), y pruebe los botones de acción directa \codeinline{$\checkmark$ Aprobar / Verificar} y \codeinline{$\times$ Suspender / Desactivar}. Al aprobar a \textbf{Prof. Carlos Reverón} y volver a ingresar con el botón demo \codeinline{Usuario Pendiente}, compruebe que el bloqueo desaparece y accede como Profesor Verificado.
+
+  \item[\textcolor{atrilPrimary}{\textbf{$\checkmark$}}] \footnotesize
+  \textbf{5. Directorio de Profesores y Chat Interno (\texttt{StudentTeachersScreen}, \texttt{TeacherDetailScreen}, \texttt{ChatInboxScreen}, \texttt{ChatRoomScreen}):}
+  Ingrese como \codeinline{Estudiante Verificado} (Samuel Sanabria), filtre profesores por área/cátedra (\emph{Oboe, Guitarra, Cuatro, Fagot, Violín, Canto, Armonía}), abra el perfil del \textbf{Mtro. José Gregorio Sanabria}, elija el área a estudiar y pulse \codeinline{Iniciar Chat con el Profesor $\rightarrow$}. Envíe un mensaje en \texttt{ChatRoomScreen} y alterne a la cuenta \codeinline{Profesor Verificado} (\texttt{ChatInboxScreen}) para verificar el intercambio bidireccional de mensajes.
+\end{itemize}
+
+\newpage
+
+% ============================================================================
+% PÁGINA 2: SUITE TÉCNICA Y PROTOCOLO DE DEFECTOS
+% ============================================================================
+
+% --- Encabezado Página 2 ---
+\noindent
+\begin{tabularx}{\textwidth}{@{}Y r@{}}
+  \begin{minipage}[t]{\linewidth}
+    {\LARGE\bfseries\color{atrilNavy} SUITE TÉCNICA Y PROTOCOLO DE DEFECTOS}\\[3pt]
+    {\normalsize\bfseries\color{atrilPrimary} Pruebas Automatizadas, Verificación de Tipos e Inyección de Defectos (Rúbrica Lab 6)}
+  \end{minipage}
+  &
+  \begin{minipage}[t]{0.36\textwidth}\raggedleft\footnotesize\color{atrilTextMuted}
+    \textbf{\color{atrilNavy}Universidad Simón Bolívar}\\
+    PS-1115: Sistemas de Información I\\
+    Laboratorio 6: Pruebas de Software\\
+    Trimestre Sep--Dic 2026
+  \end{minipage}
+\end{tabularx}
+
+\vspace{0.14cm}
+{\color{atrilPrimary}\hrule height 2pt}
+{\color{atrilGold}\hrule height 1pt}
+\vspace{0.18cm}
+
+% --- Sección 3: Ejecución Local del Proyecto y Suite de Pruebas ---
+\secbadge{3}{Ejecución Local del Proyecto y Suite de Pruebas}
+{\footnotesize\color{atrilTextBody}
+Comandos reales verificados sobre el repositorio \texttt{atril-app} (Expo SDK 58 + React Native 0.88 + TypeScript 6.0):}
+
+\vspace{0.10cm}
+\begin{tcolorbox}[
+  colback=atrilNavy,
+  colframe=atrilPrimary,
+  boxrule=1pt,
+  arc=4pt,
+  left=8pt,
+  right=8pt,
+  top=5pt,
+  bottom=5pt
+]
+\begin{lstlisting}
+# 1. Clonar el repositorio en la rama feature/auth-y-reserva-modular y acceder al directorio
+git clone -b feature/auth-y-reserva-modular https://github.com/Nadhe15/Atril-.git
+cd Atril-
+
+# 2. Instalar dependencias del proyecto
+npm install
+
+# 3. Ya la base de datos se encuentra conectada
+
+# 4. Verificación estricta de tipos TypeScript (Resultado actual real: 0 errores - PASS)
+npx tsc --noEmit
+
+# 5. Ejecutar la aplicación en entorno local (Expo Web / Servidor de Desarrollo)
+npx expo start --web
+
+\end{lstlisting}
+\end{tcolorbox}
+
+\vspace{0.08cm}
+\begin{tcolorbox}[
+  colback=atrilWarnTint,
+  colframe=atrilWarnText,
+  boxrule=0.7pt,
+  arc=3pt,
+  left=7pt,
+  right=7pt,
+  top=4pt,
+  bottom=4pt
+]
+  {\scriptsize\color{atrilWarnText}
+  \textbf{Nota de Veracidad Técnica (Auditoría QA):} El chequeo estático de tipos \texttt{npx tsc --noEmit} finaliza con código \texttt{0} (sin errores en los 32 módulos TypeScript). La suite de pruebas unitarias/integración automatizadas (\texttt{\_\_tests\_\_}) y el porcentaje de cobertura con Jest/Vitest se dejan marcados como \textbf{pendientes por implementar} (\texttt{[PENDIENTE\_TESTS\_Y\_COBERTURA]}).}
+\end{tcolorbox}
+
+% --- Sección 4: Protocolo de Inyección de Defectos Deliberados ---
+\secbadge{4}{Protocolo de Inyección de Defectos Deliberados (Rúbrica --- Tabla 5)}
+{\footnotesize\color{atrilTextBody}
+Para completar la \textbf{Tabla 5 (Pruebas con Defectos Provocados)}, se especifican dos defectos reales y reproducibles en los servicios y utilidades del repositorio:}
+
+\vspace{0.10cm}
+
+% Defecto A
+\begin{tcolorbox}[
+  colback=atrilDangerTint,
+  colframe=atrilDanger,
+  boxrule=0.8pt,
+  arc=4pt,
+  left=8pt,
+  right=8pt,
+  top=5pt,
+  bottom=5pt
+]
+  {\footnotesize\bfseries\color{atrilDangerText} Defecto A (Nivel Unitario --- Lógica de Dominio y Validación en Servicios / Utilidades):}\\[2pt]
+  {\footnotesize\color{atrilTextBody}
+  \textbf{Archivo y función exacta:} \texttt{src/utils/escrowCalculator.ts} en \texttt{calcularHonorarioClase(tarifaBruta: number)} (líneas 22--37) \emph{[o en \texttt{src/services/authService.ts}, función \texttt{registrarUsuarioUnificado()}, línea 185]}.\\[1pt]
+  \textbf{Acción provocada:} En \texttt{src/utils/escrowCalculator.ts}, comentar la validación de las líneas 23--25 (\texttt{if (!Number.isFinite(tarifaBruta) || tarifaBruta <= 0) throw new Error(...)}) o alterar la línea 30 cambiando \texttt{bruto - comisionPlataforma} por \texttt{bruto + comisionPlataforma}. \emph{(Alternativamente en \texttt{src/services/authService.ts}, línea 185: cambiar \texttt{const estadoInicial: EstadoVerificacion = 'pendiente'} a \texttt{'verificado'})}.\\[1pt]
+  \textbf{Comando de prueba:} Ejecutar \texttt{npx tsc --noEmit} y evaluar \texttt{calcularHonorarioClase(0)} / \texttt{calcularHonorarioClase(25)} (o registrar un postulante en \texttt{AuthLandingScreen} con \texttt{npx expo start --web}).\\[1pt]
+  \textbf{Resultado de fallo esperado:} La función admite tarifas nulas o negativas ($\le 0$) sin lanzar \texttt{Error("La tarifa bruta de la clase debe ser mayor a \$0.00 USD.")} y rompe la invariante contable ($\texttt{comisionPlataforma} + \texttt{honorarioNeto} \neq \texttt{bruto}$); o en \texttt{authService.ts} omite el bloqueo de \texttt{PendingVerificationScreen} otorgando acceso verificado sin auditoría de FundaOboe.}
+\end{tcolorbox}
+
+\vspace{0.10cm}
+
+% Defecto B
+\begin{tcolorbox}[
+  colback=atrilSurfaceSub,
+  colframe=atrilPrimary,
+  boxrule=0.8pt,
+  arc=4pt,
+  left=8pt,
+  right=8pt,
+  top=5pt,
+  bottom=5pt
+]
+  {\footnotesize\bfseries\color{atrilPrimary} Defecto B (Nivel de Integración --- Flujo de Verificación Admin y Restricción de Chat Interno):}\\[2pt]
+  {\footnotesize\color{atrilTextBody}
+  \textbf{Archivo y función exacta:} \texttt{src/services/chatService.ts} en \texttt{enviarMensaje(conversacionId, remitenteId, contenido)} (líneas 228--236) y \texttt{src/services/adminService.ts} en \texttt{listarUsuariosVerificacion(filtroEstado)} (líneas 166--220).\\[1pt]
+  \textbf{Acción provocada:} (1) En \texttt{src/services/chatService.ts} (línea 234), remover la condición \texttt{|| !contenido.trim()} de la guardia de entrada; o (2) en \texttt{src/services/adminService.ts} (líneas 191 y 219), comentar el filtro \texttt{.filter((u) => u.estado\_verificacion === filtroEstado)} devolviendo \texttt{todosCache} sin filtrar.\\[1pt]
+  \textbf{Comando de prueba:} Ejecutar \texttt{npx expo start --web} (o prueba de integración de servicios), invocar \texttt{enviarMensaje(convId, userId, "   ")} en \texttt{ChatRoomScreen} o seleccionar el filtro \emph{Pendientes} en \texttt{AdminDashboardScreen}.\\[1pt]
+  \textbf{Resultado de fallo esperado:} El servicio de mensajería persiste mensajes en blanco en \texttt{public.mensajes} y \texttt{MENSAJES\_POR\_CONVERSACION\_CACHE} en lugar de lanzar \texttt{Error("La conversación, el remitente y el contenido del mensaje son obligatorios.")}, mientras que la consola Superadmin infringe el filtrado de estados exponiendo cuentas ya verificadas como pendientes.}
+\end{tcolorbox}
+
+% --- Sección 5: Cuadro de Conformidad y Firma de Coevaluación ---
+\secbadge{5}{Cuadro de Conformidad y Firma de Coevaluación}
+
+\begin{tcolorbox}[
+  colback=atrilBg,
+  colframe=atrilBorder,
+  boxrule=0.9pt,
+  arc=4pt,
+  left=10pt,
+  right=10pt,
+  top=8pt,
+  bottom=8pt
+]
+  \noindent
+  \begin{tabularx}{\textwidth}{@{}p{0.44\textwidth}@{\hspace{12pt}}Y@{}}
+    \begin{minipage}[t]{\linewidth}\footnotesize\color{atrilNavy}
+      \vspace{2pt}
+      \textbf{Equipo Evaluador:} \underline{\hspace{4.2cm}}\\[10pt]
+      \textbf{Representante:} \underline{\hspace{4.6cm}}\\[10pt]
+      \textbf{Fecha de Verificación:} \underline{\hspace{0.7cm}} / \underline{\hspace{0.7cm}} / 2026\\[10pt]
+      \textbf{Firma de Conformidad:} \underline{\hspace{3.6cm}}
+    \end{minipage}
+    &
+    \begin{minipage}[t]{\linewidth}\footnotesize\color{atrilTextBody}
+      \begin{itemize}[leftmargin=0.5cm, itemsep=5pt, topsep=0pt, parsep=0pt]
+        \item[\textcolor{atrilPrimary}{\large$\square$}] \textbf{Ejecución / Despliegue verificado correctamente} (Expo Web / Local y conexión Supabase BaaS).
+        \item[\textcolor{atrilPrimary}{\large$\square$}] \textbf{Flujos de Roles (Admin, Profesor, Estudiante, Pendiente) y Chat verificados} en interfaz.
+        \item[\textcolor{atrilPrimary}{\large$\square$}] \textbf{Verificación de tipos (\texttt{npx tsc --noEmit}) y tests automáticos ejecutados} (según Sección 3).
+        \item[\textcolor{atrilPrimary}{\large$\square$}] \textbf{Defectos deliberados comprobados (Tabla 5)} (Defecto A Unitario y Defecto B Integración).
+      \end{itemize}
+    \end{minipage}
+  \end{tabularx}
+\end{tcolorbox}
+
+\end{document}

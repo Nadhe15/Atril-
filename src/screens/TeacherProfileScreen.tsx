@@ -61,7 +61,7 @@ export default function TeacherProfileScreen({
 
   const bioMostrar =
     fichaCatalogo?.bio ||
-    'Profesor verificado por el consejo académico de la Fundación Venezolana del Oboe para impartir formación musical tutelada.';
+    'Profesor verificado por el consejo académico de la Fundación Venezolana para impartir formación musical tutelada.';
 
   return (
     <View style={styles.container}>

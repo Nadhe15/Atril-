@@ -154,7 +154,8 @@ export default function ChatRoomScreen({
   return (
     <KeyboardAvoidingView
       style={styles.keyboardContainer}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {/* Cabecera de la Sala de Chat */}
       <View style={styles.chatHeader}>

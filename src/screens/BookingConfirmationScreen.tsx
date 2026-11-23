@@ -31,7 +31,7 @@ export interface BookingConfirmationScreenProps {
 
 const ETIQUETA_MODALIDAD: Record<ModalidadClase, string> = {
   online_en_vivo: 'Online En Vivo (Sala Zoom)',
-  presencial_caracas: 'Presencial Caracas (Sede FundaOboeHJK)',
+  presencial_caracas: 'Presencial Caracas',
   hibrido: 'Híbrido (Presencial + Zoom)',
 };
 

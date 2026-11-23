@@ -5,12 +5,12 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
   Platform,
   StatusBar as RNStatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import THEME from '../constants/theme';
 import {
   aprobarUsuario,

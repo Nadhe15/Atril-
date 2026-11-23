@@ -6,12 +6,11 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
-  Platform,
-  StatusBar as RNStatusBar,
+  KeyboardAvoidingView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import THEME from '../constants/theme';
 import {
   iniciarSesionUnificado,
@@ -216,7 +215,7 @@ export default function AuthLandingScreen({
         rol_v5: 'admin',
         estado_verificacion: 'verificado',
         cedula_identidad: 'V-10293847',
-        nombre_completo: 'Virginia (Superadmin Fundaoboe)',
+        nombre_completo: 'Superadmin Fundaoboe',
         telefono: '+58 412-9000001',
         created_at: ahoraIso,
       };
@@ -278,11 +277,12 @@ export default function AuthLandingScreen({
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+      <KeyboardAvoidingView style={styles.flex1} behavior="padding">
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Encabezado Institucional */}
         <View style={styles.brandHeader}>
           <View style={styles.brandRow}>
@@ -753,7 +753,7 @@ export default function AuthLandingScreen({
             {modoAuth === 'login' && (
               <View style={styles.demoSection}>
                 <Text style={styles.demoSectionTitle}>
-                  ⚡ Accesos Rápidos de Prueba (Demo)
+                   Accesos Rápidos de Prueba (Demo)
                 </Text>
                 <View style={styles.demoButtonsGrid}>
                   <TouchableOpacity
@@ -762,7 +762,7 @@ export default function AuthLandingScreen({
                     onPress={() => handleQuickDemoAccess('admin')}
                   >
                     <Text style={styles.demoCompactBtnText}>
-                      🛡️ Admin (Virginia)
+                     Administrador
                     </Text>
                   </TouchableOpacity>
 
@@ -772,7 +772,7 @@ export default function AuthLandingScreen({
                     onPress={() => handleQuickDemoAccess('docente_verificado')}
                   >
                     <Text style={styles.demoCompactBtnText}>
-                      🎻 Profesor Verificado
+                       Profesor Verificado
                     </Text>
                   </TouchableOpacity>
 
@@ -782,7 +782,7 @@ export default function AuthLandingScreen({
                     onPress={() => handleQuickDemoAccess('estudiante_verificado')}
                   >
                     <Text style={styles.demoCompactBtnText}>
-                      🎓 Estudiante Verificado
+                       Estudiante Verificado
                     </Text>
                   </TouchableOpacity>
 
@@ -792,7 +792,7 @@ export default function AuthLandingScreen({
                     onPress={() => handleQuickDemoAccess('pendiente')}
                   >
                     <Text style={styles.demoCompactBtnText}>
-                      ⏳ Usuario Pendiente
+                       Usuario Pendiente
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -807,7 +807,7 @@ export default function AuthLandingScreen({
         {activeTopTab === 'quienes_somos' && (
           <View style={styles.card}>
             <View style={styles.sectionBadge}>
-              <Text style={styles.sectionBadgeText}>FUNDACIÓN VENEZOLANA DEL OBOE</Text>
+              <Text style={styles.sectionBadgeText}>FUNDACIÓN VENEZOLANA</Text>
             </View>
 
             <Text style={styles.infoMainTitle}>
@@ -818,9 +818,9 @@ export default function AuthLandingScreen({
             </Text>
 
             <View style={styles.infoRoleBox}>
-              <Text style={styles.infoRoleTitle}>🎻 Para Profesores y Maestros</Text>
+              <Text style={styles.infoRoleTitle}>Para Profesores y Maestros</Text>
               <Text style={styles.infoRoleBullet}>
-                • <Text style={styles.boldText}>Postulación sencilla:</Text> Registra tus datos básicos y el área o cátedra que impartes.
+                • <Text style={styles.boldText}>Postulación sencilla:</Text> Registra tus datos básicos y tu area, nosotros te contactamos.
               </Text>
               <Text style={styles.infoRoleBullet}>
                 • <Text style={styles.boldText}>Acreditación institucional:</Text> Fundaoboe valida tu trayectoria y credenciales directamente por vía institucional antes de publicar tu perfil.
@@ -832,13 +832,13 @@ export default function AuthLandingScreen({
 
             <View style={styles.infoRoleBox}>
               <Text style={styles.infoRoleTitle}>
-                🎓 Para Estudiantes y Representantes
+                 Para Estudiantes y Representantes
               </Text>
               <Text style={styles.infoRoleBullet}>
                 • <Text style={styles.boldText}>Verificación de identidad:</Text> Garantizamos la seguridad de toda la comunidad validando a cada alumno o a su representante legal (para menores de 18 años).
               </Text>
               <Text style={styles.infoRoleBullet}>
-                • <Text style={styles.boldText}>Cátedras especializadas:</Text> Accede a maestros de Oboe Sinfónico, Guitarra Clásica, Cuatro Venezolano, Fagot, Violín, Canto, Armonía y Lenguaje Musical.
+                • <Text style={styles.boldText}>Cátedras especializadas:</Text> Accede a maestros de Oboe, Guitarra Clásica, Cuatro Venezolano, Fagot, Violín, Canto, Armonía y Lenguaje Musical.
               </Text>
               <Text style={styles.infoRoleBullet}>
                 • <Text style={styles.boldText}>Mensajería directa:</Text> Una vez verificada tu cuenta, coordina horarios y objetivos directamente con el profesor en el chat interno.
@@ -902,7 +902,8 @@ export default function AuthLandingScreen({
             )}
           </View>
         )}
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -911,7 +912,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: THEME.background,
-    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
+  },
+  flex1: {
+    flex: 1,
   },
   scrollContent: {
     padding: 20,

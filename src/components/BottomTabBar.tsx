@@ -5,8 +5,8 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import THEME from '../constants/theme';
 
 export type StudentTabKey = 'profesores' | 'chat';
@@ -45,9 +45,12 @@ export type BottomTabBarProps =
   | TeacherBottomTabBarProps;
 
 export default function BottomTabBar(props: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, 12);
+
   if (props.variant === 'student') {
     return (
-      <View style={styles.outerSafeWrapper}>
+      <View style={[styles.outerSafeWrapper, { paddingBottom: bottomPadding }]}>
         <View style={styles.barContainer}>
           {STUDENT_TABS.map((tab) => {
             const isActive = props.activeTab === tab.key;
@@ -79,7 +82,7 @@ export default function BottomTabBar(props: BottomTabBarProps) {
   }
 
   return (
-    <View style={styles.outerSafeWrapper}>
+    <View style={[styles.outerSafeWrapper, { paddingBottom: bottomPadding }]}>
       <View style={styles.barContainer}>
         {TEACHER_TABS.map((tab) => {
           const isActive = props.activeTab === tab.key;
@@ -115,8 +118,6 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.surface,
     borderTopWidth: 1.5,
     borderTopColor: THEME.borderUi,
-    paddingBottom:
-      Platform.OS === 'android' ? 28 : Platform.OS === 'ios' ? 22 : 10,
     paddingTop: 6,
   },
   barContainer: {
