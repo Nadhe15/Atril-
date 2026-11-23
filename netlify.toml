@@ -14,6 +14,7 @@
   NPM_FLAGS = "--legacy-peer-deps"
   CI = "true"
   ATRIL_ENV = "staging"
+  SECRETS_SCAN_OMIT_KEYS = "EXPO_PUBLIC_SUPABASE_URL,EXPO_PUBLIC_SUPABASE_ANON_KEY"
 
 # Endpoints de observabilidad mínima (DoD #20) activos en Netlify Functions
 [[redirects]]
