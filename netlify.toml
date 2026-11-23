@@ -7,7 +7,7 @@
 [build]
   command = "npm run build:web"
   publish = "dist"
-  functions = "netlify/functions"
+  functions = "netlify/functions-disabled"
 
 [build.environment]
   NODE_VERSION = "22"
@@ -15,19 +15,6 @@
   CI = "true"
   ATRIL_ENV = "staging"
   SECRETS_SCAN_OMIT_KEYS = "EXPO_PUBLIC_SUPABASE_URL,EXPO_PUBLIC_SUPABASE_ANON_KEY"
-
-# Endpoints de observabilidad mínima (DoD #20) activos en Netlify Functions
-[[redirects]]
-  from = "/health"
-  to = "/.netlify/functions/health"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/ready"
-  to = "/.netlify/functions/ready"
-  status = 200
-  force = true
 
 # Fallback SPA para Expo Web (evita 404 al recargar cualquier ruta)
 [[redirects]]
