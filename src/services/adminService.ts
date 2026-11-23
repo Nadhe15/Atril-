@@ -1,6 +1,7 @@
 // src/services/adminService.ts
 import { supabase } from '../lib/supabase';
 import { EstadoVerificacion, RolV5, Usuario } from '../types/atril.types';
+import { createCorrelationId, logger } from '../lib/logger';
 
 export type FiltroEstadoVerificacion = EstadoVerificacion | 'todos';
 
@@ -227,8 +228,21 @@ export async function actualizarEstadoVerificacion(
   userId: string,
   nuevoEstado: EstadoVerificacion
 ): Promise<Usuario> {
+  const correlationId = createCorrelationId('adm');
+  const startedAt = Date.now();
   if (!userId) {
-    throw new Error('El identificador del usuario (userId) es obligatorio.');
+    const err = new Error('El identificador del usuario (userId) es obligatorio.');
+    logger.warn({
+      flow: 'admin_verification',
+      action: 'actualizar_estado_verificacion',
+      correlationId,
+      actorRole: 'admin',
+      status: 'denied',
+      durationMs: Date.now() - startedAt,
+      error: err,
+      errorCode: 'ADMIN_MISSING_USER_ID',
+    });
+    throw err;
   }
 
   try {
@@ -245,6 +259,15 @@ export async function actualizarEstadoVerificacion(
         estado_verificacion: nuevoEstado,
       });
       USUARIOS_MEMORIA_FALLBACK.set(actualizado.id, actualizado);
+      logger.info({
+        flow: 'admin_verification',
+        action: 'actualizar_estado_verificacion',
+        correlationId,
+        actorRole: 'admin',
+        status: 'ok',
+        durationMs: Date.now() - startedAt,
+        metadata: { targetUserId: userId, nuevoEstado, source: 'supabase' },
+      });
       return actualizado;
     }
   } catch {
@@ -267,6 +290,15 @@ export async function actualizarEstadoVerificacion(
       };
 
   USUARIOS_MEMORIA_FALLBACK.set(userId, respaldo);
+  logger.info({
+    flow: 'admin_verification',
+    action: 'actualizar_estado_verificacion',
+    correlationId,
+    actorRole: 'admin',
+    status: 'ok',
+    durationMs: Date.now() - startedAt,
+    metadata: { targetUserId: userId, nuevoEstado, source: 'cache_fallback' },
+  });
   return respaldo;
 }
 

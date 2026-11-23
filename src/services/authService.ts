@@ -13,6 +13,7 @@ import {
   obtenerUsuarioDeCacheAdmin,
   sincronizarUsuarioEnCacheAdmin,
 } from './adminService';
+import { createCorrelationId, logger } from '../lib/logger';
 
 export type { TipoEstudiante };
 
@@ -83,10 +84,10 @@ function enriquecerPerfilConEstadoV5(
 
   const rolV5 = normalizarRolV5(base.rol_v5 || enCacheAdmin?.rol_v5 || rolRaw);
 
-  // Priorizar estado_verificacion actualizado por el administrador en caché o en BD
+  // Priorizar estado_verificacion real proveniente de PostgreSQL; si no vino de BD (modo demo), usar caché local
   const estadoRaw =
-    enCacheAdmin?.estado_verificacion ||
     base.estado_verificacion ||
+    enCacheAdmin?.estado_verificacion ||
     (meta.estado_verificacion as string | undefined) ||
     'pendiente';
 
@@ -160,6 +161,8 @@ function enriquecerPerfilConEstadoV5(
 export async function registrarUsuarioUnificado(
   input: RegistroUnificadoV5Input
 ): Promise<PerfilUsuarioAtril> {
+  const correlationId = createCorrelationId('auth');
+  const startedAt = Date.now();
   const emailLimpio = input.email.trim().toLowerCase();
   const nombreLimpio = input.nombreCompleto.trim();
   const cedulaLimpia = input.cedula.trim();
@@ -205,9 +208,21 @@ export async function registrarUsuarioUnificado(
   });
 
   if (signUpError || !authData.user) {
-    throw new Error(
+    const err = new Error(
       signUpError?.message || 'No se pudo completar el registro en Supabase Auth.'
     );
+    logger.error({
+      flow: 'auth_signup',
+      action: 'registrar_usuario_unificado',
+      correlationId,
+      actorRole: rolElegido,
+      status: 'error',
+      durationMs: Date.now() - startedAt,
+      metadata: { esMenor },
+      error: err,
+      errorCode: 'AUTH_SIGNUP_FAILED',
+    });
+    throw err;
   }
 
   const basePerfil: PerfilUsuarioAtril = {
@@ -241,6 +256,10 @@ export async function registrarUsuarioUnificado(
           tipo_estudiante: tipoEstudiante,
           cedula_identidad: cedulaLimpia || null,
           telefono: telefonoLimpio || null,
+          es_menor: esMenor,
+          nombre_representante: nombreRepresentante,
+          cedula_representante: cedulaRepresentante,
+          area_docente: areaDocente,
         },
       ],
       { onConflict: 'id' }
@@ -249,6 +268,19 @@ export async function registrarUsuarioUnificado(
     .single();
 
   if (!perfilError && perfilData) {
+    logger.info({
+      flow: 'auth_signup',
+      action: 'registrar_usuario_unificado',
+      correlationId,
+      actorRole: rolElegido,
+      status: 'ok',
+      durationMs: Date.now() - startedAt,
+      metadata: {
+        userId: authData.user.id,
+        esMenor,
+        estadoInicial,
+      },
+    });
     return enriquecerPerfilConEstadoV5(
       {
         ...(perfilData as Partial<Usuario>),
@@ -288,6 +320,15 @@ export async function registrarUsuarioUnificado(
     .maybeSingle();
 
   sincronizarUsuarioEnCacheAdmin(basePerfil);
+  logger.warn({
+    flow: 'auth_signup',
+    action: 'registrar_usuario_unificado_fallback',
+    correlationId,
+    actorRole: rolElegido,
+    status: 'ok',
+    durationMs: Date.now() - startedAt,
+    metadata: { userId: authData.user.id, esMenor, estadoInicial },
+  });
   return basePerfil;
 }
 
@@ -302,6 +343,8 @@ export async function iniciarSesionUnificado(
   email: string,
   password: string
 ): Promise<PerfilUsuarioAtril> {
+  const correlationId = createCorrelationId('auth');
+  const startedAt = Date.now();
   const emailLimpio = email.trim().toLowerCase();
 
   const { data: signInData, error: signInError } =
@@ -311,9 +354,19 @@ export async function iniciarSesionUnificado(
     });
 
   if (signInError || !signInData.user) {
-    throw new Error(
+    const err = new Error(
       signInError?.message || 'Correo o contraseña incorrectos. Verifica tus datos.'
     );
+    logger.warn({
+      flow: 'auth_login',
+      action: 'iniciar_sesion_unificado',
+      correlationId,
+      status: 'denied',
+      durationMs: Date.now() - startedAt,
+      error: err,
+      errorCode: 'AUTH_INVALID_CREDENTIALS',
+    });
+    throw err;
   }
 
   const user = signInData.user;
@@ -325,24 +378,37 @@ export async function iniciarSesionUnificado(
     .eq('id', user.id)
     .maybeSingle();
 
-  if (usuarioData) {
-    return enriquecerPerfilConEstadoV5(
-      {
-        ...(usuarioData as Partial<Usuario>),
-        id: user.id,
-        email: user.email || emailLimpio,
-      },
-      meta
-    );
-  }
+  const perfil = usuarioData
+    ? enriquecerPerfilConEstadoV5(
+        {
+          ...(usuarioData as Partial<Usuario>),
+          id: user.id,
+          email: user.email || emailLimpio,
+        },
+        meta
+      )
+    : enriquecerPerfilConEstadoV5(
+        {
+          id: user.id,
+          email: user.email || emailLimpio,
+        },
+        meta
+      );
 
-  return enriquecerPerfilConEstadoV5(
-    {
-      id: user.id,
-      email: user.email || emailLimpio,
+  logger.info({
+    flow: 'auth_login',
+    action: 'iniciar_sesion_unificado',
+    correlationId,
+    actorRole: perfil.rol_v5,
+    status: 'ok',
+    durationMs: Date.now() - startedAt,
+    metadata: {
+      userId: perfil.id,
+      estadoVerificacion: perfil.estado_verificacion,
     },
-    meta
-  );
+  });
+
+  return perfil;
 }
 
 export const signInUnified = iniciarSesionUnificado;

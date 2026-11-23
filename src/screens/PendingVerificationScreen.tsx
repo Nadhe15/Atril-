@@ -47,12 +47,12 @@ export default function PendingVerificationScreen({
         await onRefreshStatus();
       }
 
-      const enCache = obtenerUsuarioDeCacheAdmin(usuario.id);
       const sesionRemota = await getCurrentSessionUser();
+      const enCache = obtenerUsuarioDeCacheAdmin(usuario.id);
 
       const estadoActual =
-        enCache?.estado_verificacion ??
         sesionRemota?.estado_verificacion ??
+        enCache?.estado_verificacion ??
         usuario.estado_verificacion;
 
       const actualizado: PerfilUsuarioAtril = {

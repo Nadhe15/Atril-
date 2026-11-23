@@ -1,0 +1,43 @@
+# Configuración automática de despliegue para Netlify — ATRIL v5.0 (FundaOboeHJK)
+# Rama recomendada en Netlify: feature/auth-y-reserva-modular
+# Variables obligatorias en Netlify (Site configuration -> Environment variables):
+#   - EXPO_PUBLIC_SUPABASE_URL
+#   - EXPO_PUBLIC_SUPABASE_ANON_KEY
+
+[build]
+  command = "npm run build:web"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--legacy-peer-deps"
+  CI = "true"
+  ATRIL_ENV = "staging"
+
+# Endpoints de observabilidad mínima (DoD #20) activos en Netlify Functions
+[[redirects]]
+  from = "/health"
+  to = "/.netlify/functions/health"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/ready"
+  to = "/.netlify/functions/ready"
+  status = 200
+  force = true
+
+# Fallback SPA para Expo Web (evita 404 al recargar cualquier ruta)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Cabeceras básicas de seguridad HTTP
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

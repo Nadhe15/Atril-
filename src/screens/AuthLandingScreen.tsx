@@ -14,6 +14,11 @@ import {
 } from 'react-native';
 import THEME from '../constants/theme';
 import {
+  AVISO_LEGAL_LOPNNA_MENORES,
+  AVISO_LEGAL_LOPNNA_TITULO,
+  MENSAJE_GUIA_EDAD_ESTUDIANTE,
+} from '../constants/lopnna';
+import {
   iniciarSesionUnificado,
   PerfilUsuarioAtril,
   registrarUsuarioUnificado,
@@ -487,8 +492,14 @@ export default function AuthLandingScreen({
                 {rolRegistro === 'estudiante' && (
                   <View style={styles.ageSubBlock}>
                     <Text style={styles.fieldLabel}>Condición de edad del estudiante:</Text>
+                    <Text style={styles.ageGuideText}>
+                      ⚖️ {MENSAJE_GUIA_EDAD_ESTUDIANTE}
+                    </Text>
                     <View style={styles.ageButtonsRow}>
                       <TouchableOpacity
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: !esMenorEdad }}
+                        accessibilityLabel="Estudiante mayor de 18 años"
                         style={[
                           styles.ageChip,
                           !esMenorEdad && styles.ageChipSelected,
@@ -506,6 +517,9 @@ export default function AuthLandingScreen({
                       </TouchableOpacity>
 
                       <TouchableOpacity
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: esMenorEdad }}
+                        accessibilityLabel="Estudiante menor de 18 años, requiere representante legal según LOPNNA"
                         style={[
                           styles.ageChip,
                           esMenorEdad && styles.ageChipSelected,
@@ -630,11 +644,27 @@ export default function AuthLandingScreen({
                       👨‍👧 Datos del Padre o Representante Legal
                     </Text>
 
+                    <View
+                      style={styles.lopnnaNoticeBox}
+                      accessible
+                      accessibilityRole="alert"
+                      accessibilityLiveRegion="polite"
+                    >
+                      <Text style={styles.lopnnaNoticeTitle}>
+                        ⚖️ {AVISO_LEGAL_LOPNNA_TITULO}
+                      </Text>
+                      <Text style={styles.lopnnaNoticeText}>
+                        {AVISO_LEGAL_LOPNNA_MENORES}
+                      </Text>
+                    </View>
+
                     <View style={styles.fieldGroup}>
                       <Text style={styles.fieldLabel}>
                         Nombre y Apellido del Representante
                       </Text>
                       <TextInput
+                        accessibilityLabel="Nombre y apellido del padre o representante legal"
+                        accessibilityHint="Campo obligatorio según la LOPNNA para estudiantes menores de 18 años"
                         style={[
                           styles.input,
                           errores.nombreRepresentante ? styles.inputError : undefined,
@@ -645,7 +675,10 @@ export default function AuthLandingScreen({
                         onChangeText={setNombreRepresentante}
                       />
                       {errores.nombreRepresentante && (
-                        <Text style={styles.errorText}>
+                        <Text
+                          accessibilityLiveRegion="polite"
+                          style={styles.errorText}
+                        >
                           {errores.nombreRepresentante}
                         </Text>
                       )}
@@ -656,6 +689,8 @@ export default function AuthLandingScreen({
                         Cédula de Identidad del Representante
                       </Text>
                       <TextInput
+                        accessibilityLabel="Cédula de identidad del representante legal"
+                        accessibilityHint="Documento de identidad obligatorio del representante legal"
                         style={[
                           styles.input,
                           errores.cedulaRepresentante ? styles.inputError : undefined,
@@ -667,7 +702,10 @@ export default function AuthLandingScreen({
                         onChangeText={setCedulaRepresentante}
                       />
                       {errores.cedulaRepresentante && (
-                        <Text style={styles.errorText}>
+                        <Text
+                          accessibilityLiveRegion="polite"
+                          style={styles.errorText}
+                        >
                           {errores.cedulaRepresentante}
                         </Text>
                       )}
@@ -1184,6 +1222,31 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     fontWeight: '900',
     marginBottom: 10,
+  },
+  ageGuideText: {
+    color: THEME.textMuted,
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 8,
+  },
+  lopnnaNoticeBox: {
+    backgroundColor: THEME.warnTint,
+    borderWidth: 1.5,
+    borderColor: THEME.warnText,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  lopnnaNoticeTitle: {
+    color: THEME.warnText,
+    fontSize: 12.5,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  lopnnaNoticeText: {
+    color: THEME.textTitle,
+    fontSize: 12,
+    lineHeight: 17.5,
   },
   passwordContainer: {
     flexDirection: 'row',

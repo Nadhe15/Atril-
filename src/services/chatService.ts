@@ -1,6 +1,7 @@
 // src/services/chatService.ts
 import { supabase } from '../lib/supabase';
 import { ConversacionRow, MensajeRow } from '../types/atril.types';
+import { createCorrelationId, logger } from '../lib/logger';
 
 // Cachés en memoria para pruebas locales y respaldo cuando las tablas aún no estén migradas en Supabase
 const CONVERSACIONES_CACHE = new Map<string, ConversacionRow>();
@@ -231,8 +232,22 @@ export async function enviarMensaje(
   contenido: string,
   nombreRemitente?: string
 ): Promise<MensajeRow> {
+  const correlationId = createCorrelationId('chat');
+  const startedAt = Date.now();
   if (!conversacionId || !remitenteId || !contenido.trim()) {
-    throw new Error('La conversación, el remitente y el contenido del mensaje son obligatorios.');
+    const err = new Error(
+      'La conversación, el remitente y el contenido del mensaje son obligatorios.'
+    );
+    logger.warn({
+      flow: 'direct_chat',
+      action: 'enviar_mensaje',
+      correlationId,
+      status: 'denied',
+      durationMs: Date.now() - startedAt,
+      error: err,
+      errorCode: 'CHAT_EMPTY_PAYLOAD',
+    });
+    throw err;
   }
 
   const textoLimpio = contenido.trim();
@@ -258,6 +273,18 @@ export async function enviarMensaje(
       };
       guardarMensajeEnCache(msgRemoto);
       notificarListenersLocales(conversacionId, msgRemoto);
+      logger.info({
+        flow: 'direct_chat',
+        action: 'enviar_mensaje',
+        correlationId,
+        status: 'ok',
+        durationMs: Date.now() - startedAt,
+        metadata: {
+          conversacionId,
+          messageLength: textoLimpio.length,
+          source: 'supabase',
+        },
+      });
       return msgRemoto;
     }
   } catch {
@@ -276,6 +303,18 @@ export async function enviarMensaje(
 
   guardarMensajeEnCache(msgLocal);
   notificarListenersLocales(conversacionId, msgLocal);
+  logger.info({
+    flow: 'direct_chat',
+    action: 'enviar_mensaje',
+    correlationId,
+    status: 'ok',
+    durationMs: Date.now() - startedAt,
+    metadata: {
+      conversacionId,
+      messageLength: textoLimpio.length,
+      source: 'cache_fallback',
+    },
+  });
   return msgLocal;
 }
 

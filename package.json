@@ -15,15 +15,25 @@
     "react-native-web": "^0.21.4"
   },
   "devDependencies": {
+    "@expo/metro-runtime": "^58.0.17",
     "@types/react": "~19.3.0",
+    "metro-runtime": "^0.87.1",
     "react-native-svg-transformer": "^1.5.3",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "ws": "^8.23.0"
   },
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "start": "node --no-turbo-fast-api-calls ./node_modules/.bin/expo start",
+    "android": "node --no-turbo-fast-api-calls ./node_modules/.bin/expo start --android",
+    "ios": "node --no-turbo-fast-api-calls ./node_modules/.bin/expo start --ios",
+    "web": "node --no-turbo-fast-api-calls ./node_modules/.bin/expo start --web",
+    "build:web": "node --no-turbo-fast-api-calls ./node_modules/.bin/expo export --platform web",
+    "typecheck": "tsc --noEmit",
+    "start:staging": "node server/stagingServer.mjs",
+    "audit:sast": "bash -c 'if grep -RInE \"(SUPABASE_SERVICE_ROLE_KEY|sk_live_|AIza[0-9A-Za-z_-]{35})\" src/ server/ netlify/ App.tsx supabase/ tests/; then echo \"ERROR SAST: Secreto detectado\"; exit 1; fi; echo \"OK SAST: 0 secretos hardcodeados en el repositorio.\"'",
+    "test": "ATRIL_TEST_MODE=1 node --no-warnings --import ./tests/ts-loader.mjs --experimental-strip-types --test tests/atril.test.ts tests/observability.test.ts",
+    "test:coverage": "ATRIL_TEST_MODE=1 node --no-warnings --import ./tests/ts-loader.mjs --experimental-strip-types --test --experimental-test-coverage tests/atril.test.ts tests/observability.test.ts",
+    "test:e2e:3x": "npm test && npm test && npm test"
   },
   "private": true
 }

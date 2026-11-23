@@ -10,6 +10,7 @@ import {
 } from '../types/atril.types';
 import { calcularAbono, calcularHonorarioClase } from '../utils/escrowCalculator';
 import { normalizarModalidadClase } from './escrowService';
+import { createCorrelationId, logger } from '../lib/logger';
 
 /**
  * Áreas y cátedras musicales oficiales de ATRIL v5.0 (FundaOboeHJK & Conservatorio).
@@ -228,6 +229,8 @@ function aplicarFiltrosLocales(
 export async function obtenerCatalogoDocentes(
   filtros?: FiltrosCatalogoDocentes
 ): Promise<DocenteCatalogoItem[]> {
+  const correlationId = createCorrelationId('cat');
+  const startedAt = Date.now();
   try {
     const { data, error } = await supabase
       .from('perfiles_profesores')
@@ -251,13 +254,42 @@ export async function obtenerCatalogoDocentes(
       const mapeados = (data as unknown as PerfilProfesorJoinRow[]).map(
         mapearFilaADocenteCatalogo
       );
-      return aplicarFiltrosLocales(mapeados, filtros);
+      const filtrados = aplicarFiltrosLocales(mapeados, filtros);
+      logger.info({
+        flow: 'teacher_catalog',
+        action: 'obtener_catalogo_docentes',
+        correlationId,
+        status: 'ok',
+        durationMs: Date.now() - startedAt,
+        metadata: {
+          source: 'supabase',
+          totalResult: filtrados.length,
+          hasAreaFilter: Boolean(filtros?.area || filtros?.instrumento),
+          hasModalidadFilter: Boolean(filtros?.modalidad),
+        },
+      });
+      return filtrados;
     }
   } catch {
     // Continúa hacia el catálogo institucional de cátedras curadas
   }
 
-  return aplicarFiltrosLocales(DOCENTES_INSTITUCIONALES_FALLBACK, filtros);
+  const filtradosFallback = aplicarFiltrosLocales(
+    DOCENTES_INSTITUCIONALES_FALLBACK,
+    filtros
+  );
+  logger.info({
+    flow: 'teacher_catalog',
+    action: 'obtener_catalogo_docentes',
+    correlationId,
+    status: 'ok',
+    durationMs: Date.now() - startedAt,
+    metadata: {
+      source: 'institutional_fallback',
+      totalResult: filtradosFallback.length,
+    },
+  });
+  return filtradosFallback;
 }
 
 /**
