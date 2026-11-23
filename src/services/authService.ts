@@ -82,7 +82,7 @@ function enriquecerPerfilConEstadoV5(
     (meta.rol as string | undefined) ||
     'estudiante';
 
-  const rolV5 = normalizarRolV5(base.rol_v5 || enCacheAdmin?.rol_v5 || rolRaw);
+  const rolV5 = normalizarRolV5(base.rol_v5 || base.rol || enCacheAdmin?.rol_v5 || rolRaw);
 
   // Priorizar estado_verificacion real proveniente de PostgreSQL; si no vino de BD (modo demo), usar caché local
   const estadoRaw =

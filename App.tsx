@@ -70,7 +70,7 @@ export default function App() {
       ...perfil,
       rol_v5: rolNorm,
       estado_verificacion:
-        enCache?.estado_verificacion ?? perfil.estado_verificacion,
+        perfil.estado_verificacion ?? enCache?.estado_verificacion,
     };
 
     setUsuarioActual(perfilSincronizado);
