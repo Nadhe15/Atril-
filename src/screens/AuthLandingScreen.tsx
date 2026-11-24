@@ -17,6 +17,8 @@ import {
   AVISO_LEGAL_LOPNNA_MENORES,
   AVISO_LEGAL_LOPNNA_TITULO,
   MENSAJE_GUIA_EDAD_ESTUDIANTE,
+  RECUADRO_SEGURIDAD_MENOR_LOPNNA_TEXTO,
+  RECUADRO_SEGURIDAD_MENOR_LOPNNA_TITULO,
 } from '../constants/lopnna';
 import {
   iniciarSesionUnificado,
@@ -536,6 +538,22 @@ export default function AuthLandingScreen({
                         </Text>
                       </TouchableOpacity>
                     </View>
+
+                    {esMenorEdad && (
+                      <View
+                        style={[styles.lopnnaNoticeBox, { marginTop: 10, marginBottom: 0 }]}
+                        accessible
+                        accessibilityRole="alert"
+                        accessibilityLiveRegion="polite"
+                      >
+                        <Text style={styles.lopnnaNoticeTitle}>
+                          {RECUADRO_SEGURIDAD_MENOR_LOPNNA_TITULO}
+                        </Text>
+                        <Text style={styles.lopnnaNoticeText}>
+                          {RECUADRO_SEGURIDAD_MENOR_LOPNNA_TEXTO}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 )}
               </View>

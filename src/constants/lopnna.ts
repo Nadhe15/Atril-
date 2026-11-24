@@ -7,10 +7,16 @@
  */
 
 export const AVISO_LEGAL_LOPNNA_TITULO =
-  'Aviso Legal Obligatorio — Protección de Menores (LOPNNA)';
+  'Aviso Legal Obligatorio — Protección y Seguridad del Menor (LOPNNA)';
 
 export const AVISO_LEGAL_LOPNNA_MENORES =
-  'En cumplimiento de la Ley Orgánica para la Protección de Niños, Niñas y Adolescentes (LOPNNA) de la República Bolivariana de Venezuela, las personas menores de 18 años no pueden registrarse ni gestionar vinculaciones académicas por sí mismas. El registro y la verificación ante FundaOboeHJK deben ser realizados y autorizados obligatoriamente por su padre, madre o representante legal.';
+  'Por seguridad y protección integral del menor de edad, y en cumplimiento de la Ley Orgánica para la Protección de Niños, Niñas y Adolescentes (LOPNNA) de la República Bolivariana de Venezuela, las personas menores de 18 años no pueden registrarse por sí mismas. Es obligatorio registrar al padre, madre o representante legal para autorizar y resguardar su vinculación académica ante FundaOboeHJK.';
 
 export const MENSAJE_GUIA_EDAD_ESTUDIANTE =
-  '¿Eres menor de 18 años? Por ley (LOPNNA), tu padre, madre o representante legal debe completar el registro.';
+  '¿Eres menor de 18 años? Por tu seguridad y según la LOPNNA, debes registrar a tu padre, madre o representante legal.';
+
+export const RECUADRO_SEGURIDAD_MENOR_LOPNNA_TITULO =
+  '🛡️ Seguridad del Menor de Edad (LOPNNA)';
+
+export const RECUADRO_SEGURIDAD_MENOR_LOPNNA_TEXTO =
+  'Se debe registrar obligatoriamente al padre, madre o representante legal, ya que es un requisito de seguridad y protección para el menor de edad según la LOPNNA.';
